@@ -1,0 +1,161 @@
+<template>
+  <div class="upload-img">
+    <el-dialog :visible.sync="dialogShow" width="500px" @close="dialogHide" title="修改头像" center>
+      <div class="changeIcon">
+        <div class="change-img">
+          <img :src="iconImgurl" alt="" style="width:100%">
+        </div>
+        <input class="file" name="file" type="file" ref="avatarInput" accept="image/png,image/gif,image/jpeg" @change="changeImage($event)" />
+        <!-- <button type="button" @click="edit">确认修改</button> -->
+      </div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import { IMAGE_PATH, IMG_TYPE } from "@/utility/dict";
+import { utility, getRequestSign } from "@/utility";
+import { iconPath } from "@/service/urlConfig";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    },
+    userList: {
+      type: Object
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+    },
+    userList: function(val) {
+      if (val.hasOwnProperty("icon") === false) {
+        this.iconImgurl = "static/userAvatar/default.png";
+      } else if (val.hasOwnProperty("icon") === true) {
+        this.iconImgurl = this.iconPath + val.icon;
+      }
+    }
+  },
+  data() {
+    return {
+      dialogShow: false,
+      Icons: [],
+      iconFile: "",
+      selectItem: 0,
+      isSelected: false,
+      iconImgurl: "",
+      activeName2: "first",
+      iconPath: iconPath
+    };
+  },
+  mounted() {
+    this.Icons = [];
+    for (let i = 1; i < 151; i++) {
+      this.Icons.push(IMAGE_PATH + i + IMG_TYPE);
+    }
+  },
+  methods: {
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    },
+    changeImage(e) {
+      this.edit();
+    },
+    edit() {
+      let params = new FormData();
+      this.token = localStorage.getItem("token");
+      let file = this.$refs.avatarInput.files[0];
+      params.append("file", file);
+      params.append("token", this.token);
+      params.append("ts", utility.getTs());
+      params.append("version", "1.0.0");
+      params.append("sign", getRequestSign(params));
+      console.log(params, "--------------params");
+      let config = {
+        "Content-Type": "multipart/form-data"
+      };
+      if (this.$refs.avatarInput.files.length !== 0) {
+        this.$http
+          .post("http://192.168.0.22:13001/api/changeIcon", params, config)
+          .then(
+            res => {
+              let result = res.data;
+              let data = result.data;
+              let msg = result.msg;
+              let code = result.code;
+              if (code === 200) {
+                console.log(data.icon, "----------res");
+                this.$message.success("上传成功");
+                this.iconImgurl =
+                 this.iconPath + data.icon;
+                localStorage.setItem("url", this.iconImgurl);
+                this.$parent.iconImgurl =
+                  this.iconPath + data.icon;
+              } else {
+                this.$message.error(msg);
+              }
+            },
+            () => {
+              this.$message.error("请求错误");
+            }
+          );
+      }
+    },
+    selectQue() {
+      this.userList.icon = this.iconFile;
+      console.log(this.userList);
+
+      localStorage.setItem("icon", this.userList.icon);
+      this.$parent.iconImgurl = localStorage.getItem("icon");
+      this.dialogShow = false;
+    },
+    selectImg(val, index) {
+      this.iconFile = val;
+      this.selectItem = index;
+      if (this.selectItem === index) {
+        this.isSelected = true;
+      } else {
+        this.isSelected = false;
+      }
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.upload-img {
+  width: 100%;
+  .el-dialog {
+    min-width: 600px;
+  }
+  .changeIcon {
+    width: 100%;
+    position: relative;
+    .change-img {
+      width: 200px;
+      height: 200px;
+      border: 1px solid #c0c4cc;
+      margin-bottom: 50px;
+    }
+    .file {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+    }
+  }
+  .el-dialog__header {
+    background: #66b1ff !important;
+    text-align: center;
+  }
+  .el-dialog__title {
+    color: #f5f7fa;
+  }
+  .el-dialog__headerbtn .el-dialog__close {
+    color: #f5f7fa;
+  }
+  .el-dialog__headerbtn {
+    font-size: 22px;
+  }
+}
+</style>

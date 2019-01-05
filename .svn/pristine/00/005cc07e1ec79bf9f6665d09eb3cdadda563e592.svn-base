@@ -1,0 +1,38 @@
+import reqUrl from "../urlConfig";
+import fetch from "@/utility/http";
+let changePass = (oldPassword, password) =>
+    fetch(
+        reqUrl.UPDATE_PASSWORD, { oldPassword: oldPassword, password: password },
+        "POST"
+    );
+let getUserInfo = () => fetch(reqUrl.GET_USER_INFO, {});
+let upDateUserInfo = (name, gender, birthDate, grade, districtCode) =>
+    fetch(
+        reqUrl.UPDATE_USER_INFO, {
+            name: name,
+            gender: gender,
+            birthDate: birthDate,
+            grade: grade,
+            districtCode: districtCode
+        },
+        "POST"
+    );
+let changeIcon = (file) =>
+    fetch(
+        reqUrl.CHANGE_ICON, {
+            file: file
+        },
+        "POST"
+    );
+let searchDivision = (divisionType, parentCode) =>
+    fetch(reqUrl.SEARCH_DIVISION, {
+        divisionType: divisionType,
+        parentCode: parentCode || ""
+    });
+export default {
+    changePass,
+    getUserInfo,
+    upDateUserInfo,
+    changeIcon,
+    searchDivision
+};

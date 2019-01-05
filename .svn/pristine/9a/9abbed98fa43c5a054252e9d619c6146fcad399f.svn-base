@@ -1,0 +1,32 @@
+import reqUrl from "../urlConfig";
+import fetch from "@/utility/http";
+//创建试卷
+let createParper = (examType, size, bookNo, grande) =>
+    fetch(reqUrl.CREATE_PARPER, {
+        examType: examType,
+        size: size,
+        bookNo: bookNo,
+        grande: grande,
+    }, 'POST');
+
+//提交试卷
+let postParper = (data) =>
+    fetch(reqUrl.POST_PARPER, {
+        data: data,
+    }, 'POST');
+
+//获取试卷内容详情
+let getParperDetail = (examId) =>
+    fetch(reqUrl.GET_PARPER_DETAIL, {
+        examId: examId,
+    }, 'GET');
+
+//获取试卷列表
+let getParperList = (page,size,examType) =>
+    fetch(reqUrl.GET_PARPER_LIST, {
+        page: page,
+        size: size,
+        examType: examType,
+    }, 'GET');
+
+export default { createParper, postParper, getParperDetail, getParperList };

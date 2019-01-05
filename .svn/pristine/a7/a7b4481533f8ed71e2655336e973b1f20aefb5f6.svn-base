@@ -1,0 +1,307 @@
+<template>
+  <div class="course-center cnfont">
+
+    <nav-header :showBack="false">
+      <div slot="title">课程中心</div>
+    </nav-header>
+    <el-tabs v-model="activeName" @tab-click="handleClick" type="border-card">
+      <el-tab-pane :label="item.name" v-for="item in bookList" :key="item.key" :name="item.key">
+        <div class="book-container">
+          <vue-better-scroll style="height:100%" class="wrapper" ref="scroll">
+            <ul style="list-style:none">
+               <li v-for="item in list" :key="item.value" @click="courseDialog(item)" style="float:left;width:150px;height:180px;padding:20px">
+                <img :src='url+item.coverImgUrl' class="bookImg">
+                <div>{{item.name}}</div>
+              </li>  
+            </ul>
+          </vue-better-scroll>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+    <course-dialog :show.sync="courseDialogShow" :bookInfo="bookInformantion"></course-dialog>
+  </div>
+</template>
+
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { ResourcePath } from "../../service/urlConfig";
+import courseDialog from "../courseCenter/courseDialog";
+import { BOOK_CATEGORY, BOOK_COLUMN_TYPE } from "../../utility/dict";
+
+export default {
+  components: {
+    navHeader,
+    VueBetterScroll,
+    courseDialog
+  },
+  data() {
+    return {
+      bookInformantion:{},
+      courseDialogShow: false,
+      url: ResourcePath,
+      page: 0,
+      activeName: "FREE",
+      bookList: [],
+
+      bookSort: "",
+      bookType: "",
+      list: [
+        {
+          bookNo: "973445860394377217",
+          bookSort: "ENGLISH_WORD",
+          bookType: "GO_ABROAD",
+          columns: 119,
+          coverImgUrl: "/quick/cimg/973445860394377217.png",
+          createTime: "2018-03-13 14:29:14",
+          id: 39,
+          info:
+            "一、适合平时学习，尤其适合考前集中突击。请在完成初高准备词汇后再开始学习。<br />\n二、共有词汇和词组5952个。每个单词下含：1.单词；2.音标；3.中英文释义；4.各种例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n三、系统会安排你的学习和复习，你无需伤神怎么安排学习和复习，来了就点，不想点了就走人。学习效率能有平时的5倍～10倍。<br />\n四、建议花一个假期集中突击，可增加几千词汇量。",
+          name: "雅思词汇速记词频序",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 5952
+        },
+        {
+          bookNo: "973445968297041922",
+          bookSort: "ENGLISH_WORD",
+          bookType: "GO_ABROAD",
+          columns: 136,
+          coverImgUrl: "/quick/cimg/973445968297041922.png",
+          createTime: "2018-03-13 14:29:39",
+          id: 40,
+          info:
+            "一、适合平时学习，尤其适合考前集中突击。<br />\n二、共有词汇和词组6794个。每个单词下含：1.单词；2.音标；3.中英文释义；4.各种例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n三、系统会安排你的学习和复习，你无需伤神怎么安排学习和复习，来了就点，不想点了就走人。学习效率能有平时的5倍～10倍。<br />\n四、建议花一个假期集中突击，可增加几千词汇量。",
+          name: "托福词汇速记词频序",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 6796
+        },
+        {
+          bookNo: "973446077957120001",
+          bookSort: "ENGLISH_WORD",
+          bookType: "GO_ABROAD",
+          columns: 142,
+          coverImgUrl: "/quick/cimg/973446077957120001.png",
+          createTime: "2018-03-13 14:30:05",
+          id: 41,
+          info:
+            "一、适合平时学习，尤其适合考前集中突击。<br />\n二、此为GRE词汇顺序版之第一部分，共有词汇和词组7085个。每个单词下含：1.单词；2.音标；3.中英文释义；4.各种例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n三、系统会安排你的学习和复习，你无需伤神怎么安排学习和复习，来了就点，不想点了就走人。学习效率能有平时的5倍～10倍。<br />\n四、建议花一个假期集中突击，可增加几千词汇量。",
+          name: "GRE词汇速记字典序A-I",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 7083
+        },
+        {
+          bookNo: "973446184525996033",
+          bookSort: "ENGLISH_WORD",
+          bookType: "HIGH",
+          columns: 120,
+          coverImgUrl: "/quick/cimg/973446184525996033.png",
+          createTime: "2018-03-13 14:30:31",
+          id: 42,
+          info:
+            "《新课标高中英语单词速记》介绍：<br />\n适合高中学生学习或者复习用。课程内容：共有词汇和词组4800个，其中单词4000，词组800。每个单词一般包括如下内容：1.单词；2.音标；3.释义；4.例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n学习建议：1.适合使用全国卷的学生使用。2.假期是突击单词的好时期。",
+          name: "新课标高中单词词频序",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 4800
+        },
+        {
+          bookNo: "973446243380469761",
+          bookSort: "ENGLISH_WORD",
+          bookType: "PRIMARY",
+          columns: 31,
+          coverImgUrl: "/quick/cimg/973446243380469761.png",
+          createTime: "2018-03-13 14:30:45",
+          id: 43,
+          info:
+            "1.此为人教版小学新起点英语教材英语词汇，共有886个。<br />\n2.每个单词一般包括如下内容：1.单词；2.音标；3.释义；4.例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n3.小学生可以独自或由家长陪同，每天花30分钟左右，一两个月即可掌握本课程全部词汇。",
+          name: "人教新起点小学英语单词速记",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 886
+        },
+        {
+          bookNo: "973446255233572866",
+          bookSort: "ENGLISH_WORD",
+          bookType: "PRIMARY",
+          columns: 27,
+          coverImgUrl: "/quick/cimg/973446255233572866.png",
+          createTime: "2018-03-13 14:30:48",
+          id: 44,
+          info:
+            "1.此为最新版湖南少儿版小学英语三起版词汇，按照单元顺序排列，共有738个。" +
+            " <br />\n2.每个单词一般包括如下内容：1.单词；2.音标；3.释义；4.例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n3.小学生可以独自或由家长陪同，每天花30分钟左右，一两个月即可掌握本课程全部词汇。",
+          name: "湘少社小学英语单词速记",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 738
+        },
+        {
+          bookNo: "973446272392470529",
+          bookSort: "ENGLISH_WORD",
+          bookType: "COMMON",
+          columns: 30,
+          coverImgUrl: "/quick/cimg/973446272392470529.png",
+          createTime: "2018-03-13 14:30:52",
+          id: 45,
+          info:
+            "1.本课程根据经典的美国英语教材《英语900句》整理编写，共收录其中所含词汇1193个。<br />\n2.课程共分30天，根据《英语900句》教材，每天学习两课的单词。<br />\n3.每个单词一般包括如下内容：1.单词；2.音标；3.释义；4.例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n4.建议每天至少用半小时学习，一个月内可轻松记完本课程全部单词。",
+          name: "《英语900句》单词速记",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 1192
+        },
+        {
+          bookNo: "973446295205289986",
+          bookSort: "ENGLISH_WORD",
+          bookType: "PRIMARY",
+          columns: 27,
+          coverImgUrl: "/quick/cimg/973446295205289986.png",
+          createTime: "2018-03-13 14:30:57",
+          id: 46,
+          info:
+            "内容为Superkids词汇共796个。按照教材顺序排列。每个单元为30个单词。每天半小时左右课学完一单元。",
+          name: "SuperKids词汇速记",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 796
+        },
+        {
+          bookNo: "973446318114578433",
+          bookSort: "ENGLISH_WORD",
+          bookType: "COMMON",
+          columns: 30,
+          coverImgUrl: "/quick/cimg/973446318114578433.png",
+          createTime: "2018-03-13 14:31:03",
+          id: 47,
+          info:
+            "1.美国之音（VOA）特别英语即通常所说的“慢速英语”，即Special English。<br />\n2.特别英语是一种简易、规范的英语广播节目，是VOA 的专家们研究如何与全世界英语学习者进行交际的产物。<br />                                 3.特别英语由美国人最常用的1500个基本单词为主体构成。其句子简短、明晰。<br />\n4.特别英语语速为每分钟90个单词。<br />\n5.建议花几周先把本课程学完后再去听特别英语，你会感觉自己的听力大不同了。",
+          name: "美国之音特别英语词汇",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 1500
+        },
+        {
+          bookNo: "973446350129700865",
+          bookSort: "ENGLISH_WORD",
+          bookType: "COMMON",
+          columns: 46,
+          coverImgUrl: "/quick/cimg/973446350129700865.png",
+          createTime: "2018-03-13 14:31:10",
+          id: 48,
+          info:
+            "1.本课程根据经典的口语教材《英语口语8000句》整理编写，共收录其中所含词汇2275个。<br />\n2.单词顺序与教材同步，建议记完单词再学习口语。<br />\n3.每个单词一般包括如下内容：1.单词；2.音标；3.释义；4.例句；5.图片；6.记忆法或相关词汇；7.标准发音。<br />\n4.建议每天至少用半小时学习，一个月内可轻松记完本课程全部单词。",
+          name: "英语口语8000句词汇速记",
+          orders: 0,
+          status: "ENABLED",
+          versionCode: 0,
+          words: 2275
+        }
+      ]
+    };
+  },
+  mounted() {
+    // this.getBookList();
+    this.bookType = "FREE";
+    this.getList();
+  },
+  methods: {
+    courseDialog(val) {
+      console.log("index",val)
+      this.bookInformantion=val;
+      this.courseDialogShow = true;
+    },
+    showDialog() {},
+    handleClick(tab, event, activeName) {
+      console.log(this.activeName);
+      this.bookType = this.activeName;
+      this.getList();
+    },
+    getList() {
+      let categoryObj = {};
+      for (let key in BOOK_CATEGORY) {
+        let val = BOOK_CATEGORY[key];
+        categoryObj[key] = {
+          key: key,
+          name: val,
+          books: []
+        };
+      }
+      this.bookList = categoryObj;
+      console.log(categoryObj);
+      //   dataService.getBookList(0, 20, this.bookSort, this.bookType).then(res => {
+      //     let result = res.data;
+      //     let code = result.code;
+      //     let data = result.data;
+      //     let msg = result.msg;
+      //     if (code == 200) {
+      //       this.list = data.content;
+      //       console.log(this.list);
+      //     }
+      //   });
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.course-center {
+  width: 100%;
+  // height: 100%;
+  .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+    color: #fff;
+    background: #409eff;
+    border-right-color: #dcdfe6;
+    border-left-color: #dcdfe6;
+  }
+  .el-tab-pane div {
+    color: #409eff;
+    font-size: 14px;
+  }
+  .bookImg {
+    width: 150px;
+    height: 150px;
+  }
+  .bookTop {
+    position: static;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .el-tabs--border-card > .el-tabs__content {
+    padding: 0;
+  }
+  .book-container {
+    position: fixed;
+    top: 110px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow-y: scroll;
+      ul {
+        list-style: none;
+        margin: 0 auto;
+      }
+    }
+  }
+}
+</style>
+
+

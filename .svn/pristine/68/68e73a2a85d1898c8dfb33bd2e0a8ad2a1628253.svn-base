@@ -1,0 +1,209 @@
+<template>
+  <div class="testResult">
+    <nav-header class="testResult-header">
+      <span slot="title">测试成绩</span>
+    </nav-header>
+    <div class="resultContainer">
+      <ul class="listContainer" v-for="(item,index) in dataList" :key="index">
+        <li class="list-item">
+          <p class="indexNo">{{index+page*7+1}}</p>
+          <p class="startTime">{{item.createTime}}</p>
+          <p class="name">{{item.name}}</p>
+          <div class="answerNo">
+            <p>共 {{item.total}} 题</p>
+            <p>对 {{item.corrects}} 题</p>
+            <p>错 {{item.incorrects}} 题</p>
+          </div>
+          <!-- <p>用时：{{item.time}}</p> -->
+          <p class="useTime">{{item.useTime}}</p>
+          <p class="score" v-if="item.examType== 'BOOK_WORD_BEFORE'||item.examType== 'BOOK_WORD_AFTER'||item.examType== 'COLUMN_WORD_BEFORE'||item.examType== 'COLUMN_WORD_AFTER'||item.examType== 'BOOK_WORD_SPELL_AFTER'||item.examType== 'BOOK_WORD_SPELL_BEFORE'||item.examType== 'COLUMN_WORD_SPELL_AFTER'||item.examType== 'COLUMN_WORD_SPELL_BEFORE'">{{item.score}}分</p>
+          <p class="score" v-if="item.examType== 'WORD'">词汇量：{{item.score}}个</p>
+          <div class="btnGroup">
+            <el-button v-if="item.examType== 'BOOK_WORD_BEFORE'||item.examType== 'BOOK_WORD_AFTER'||item.examType== 'COLUMN_WORD_BEFORE'||item.examType== 'COLUMN_WORD_AFTER'||item.examType== 'BOOK_WORD_SPELL_AFTER'||item.examType== 'BOOK_WORD_SPELL_BEFORE'||item.examType== 'COLUMN_WORD_SPELL_AFTER'||item.examType== 'COLUMN_WORD_SPELL_BEFORE'" type="text" @click="checkDetail(dataList[index])">查看</el-button>
+            <!-- <i class="shu" v-if="item.examType== 'BOOK_WORD_BEFORE'||item.examType== 'BOOK_WORD_AFTER'||item.examType== 'COLUMN_WORD_BEFORE'||item.examType== 'COLUMN_WORD_AFTER'||item.examType== 'BOOK_WORD_SPELL_AFTER'||item.examType== 'BOOK_WORD_SPELL_BEFORE'||item.examType== 'COLUMN_WORD_SPELL_AFTER'||item.examType== 'COLUMN_WORD_SPELL_BEFORE'">|</i>
+            <el-button type="text" @click="delBtn">删除</el-button> -->
+          </div>
+        </li>
+      </ul>
+    </div>
+    <el-pagination
+      background
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      layout="total, prev, pager, next"
+      :page-sizes="[7]"
+      :page-size="7"
+      :total="totalRecords">
+    </el-pagination>
+  </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import index from "vue";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      dataList2: [],
+      totalRecords: 0, //总记录数,
+      page:0,//当前页号
+    };
+  },
+  mounted() {
+    this.getData();
+  },
+  computed: {
+    dataList: function() {
+      let newArray = this.dataList2;
+      console.log("--------newArray",newArray);
+      newArray.forEach(e => {
+        if(e.finishedTime){
+          // 计算测试用时
+          let date1 = new Date(e.createTime.replace(/\-/g, "/"));
+          let date2 = new Date(e.finishedTime.replace(/\-/g, "/"));
+          let s1 = date1.getTime();
+          let s2 = date2.getTime();
+          let totalTime = (s2 - s1) / 1000;
+          let day = parseInt(totalTime / (24 * 60 * 60)); //计算整数天数
+          let afterDay = totalTime - day * 24 * 60 * 60; //取得算出天数后剩余的秒数
+          let hour = parseInt(afterDay / (60 * 60)); //计算整数小时数
+          let afterHour = totalTime - day * 24 * 60 * 60 - hour * 60 * 60; //取得算出小时数后剩余的秒数
+          let min = parseInt(afterHour / 60); //计算整数分
+          let afterMin =
+            totalTime - day * 24 * 60 * 60 - hour * 60 * 60 - min * 60;
+          e.useTime = '用时：'+min + "分" + afterMin + "秒";
+        }else{
+          e.useTime = "测试未完成";
+        }
+        if(e.score){
+          return
+        }else{
+          e.score=0;
+        }
+      });
+      return newArray;
+    }
+  },
+  methods: {
+    //获取数据
+    getData() {
+      dataService.getParperList(this.page, 7).then(
+        res => {
+          console.log("--------试卷列表--res", res);
+          let code = res.data.code;
+          if (code == 200) {
+            this.totalRecords = res.data.data.totalRecords;
+            this.dataList2=res.data.data.content;
+          }
+        },
+        err => {}
+      );
+    },
+    //删除
+    delBtn() {
+      this.$confirm(
+        "确认删除这条测试记录吗？删除后不可恢复，请谨慎选择！",
+        "提示",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+          center: true
+        }
+      )
+        .then(() => {
+          this.$message({
+            type: "success",
+            message: "删除成功!"
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
+    },
+    //查看
+    checkDetail(data) {
+      console.log("--------点击的内容", data);
+      this.$router.push({
+        name: "testResultDetail",
+        params: {
+          data: data
+        }
+      });
+    },
+    handleSizeChange(val) {
+      console.log(`每页 ${val} 条`);
+    },
+    handleCurrentChange(val) {
+      console.log(`当前页: ${val}`);
+      this.page=val-1;
+      this.getData();
+    }
+  }
+};
+</script>
+
+<style lang="scss">
+.testResult {
+  width: 100%;
+  .resultContainer {
+    padding: 10px;
+    font-size: 18px;
+    .listContainer {
+      width: 100%;
+      .list-item {
+        min-height: 93px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+        .indexNo {
+          width: 50px;
+        }
+        .startTime {
+          width: 100px;
+        }
+        .name {
+          width: 450px;
+          color: #41a0cd;
+        }
+        .useTime {
+          width: 150px;
+          text-align: left;
+          padding-left:15px;
+        }
+        .answerNo {
+          width: 200px;
+          display: flex;
+          justify-content: space-around;
+        }
+        .score {
+          width: 80px;
+          color: #fa1c2c;
+        }
+        .btnGroup {
+          width: 100px;
+          text-align: right;
+          .el-button--text {
+            font-size: 18px;
+          }
+          .shu {
+            color: #409eff;
+          }
+        }
+      }
+    }
+  }
+  .el-pagination {
+    text-align: right;
+  }
+}
+</style>

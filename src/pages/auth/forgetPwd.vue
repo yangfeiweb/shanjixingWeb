@@ -1,0 +1,368 @@
+<template>
+	<div class="forgetPwd">
+        <div class="forgetPwd-top">
+            <img src="static/images/logo.png" alt="">
+        </div>
+        <div class="forgetPwd-container">
+            <img class="user-head" src="static/images/head.png" alt="">
+            <el-form :model="userForm" ref="userForm" :rules="rules" label-width="100px" class="demo-ruleForm">
+              <el-form-item  prop="userName" >
+                  <img src="static/images/zhanghu.png" alt="">
+                  <el-input type="text" placeholder="请输入手机号/邮箱" v-model="userForm.userName" auto-complete="off"></el-input>
+                  <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+              </el-form-item>
+              <el-form-item  prop="pwd" >
+                <img src="static/images/mima.png" alt="">
+                <el-input type="password" placeholder="请输入新密码" v-model="userForm.pwd" auto-complete="off" @keyup.enter.native="doforgetPwd"></el-input>
+                <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+              </el-form-item> 
+              <el-form-item  prop="confirmPwd" >
+                <img src="static/images/mima2.png" alt="">
+                <el-input type="password" placeholder="请再次确认新密码" v-model="userForm.confirmPwd" auto-complete="off" @keyup.enter.native="doforgetPwd"></el-input>
+                <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+              </el-form-item> 
+              <el-form-item  prop="captcha" >
+                <img src="static/images/yanzheng.png" alt="">
+                <el-input type="text" placeholder="请输入验证码" v-model="userForm.captcha" auto-complete="off"></el-input>
+                <el-button type="primary" @click="getCode" v-show="!isCountDown">{{btnText}}</el-button>
+                <el-button type="primary" v-show="isCountDown">{{time+'s'}}</el-button>
+              </el-form-item>
+            </el-form> 
+              <el-button type="primary" class="forgetPwd-btn" :loading="btnLoading" @click="submitForm(userForm)">确定</el-button>
+        </div>
+	</div>
+</template>
+<script>
+import dataService from "@/service/index";
+
+export default {
+  data() {
+    //验证手机号
+    let myPhone = /^[1][3,4,5,7,8][0-9]{9}$/;
+    //验证邮箱
+    let myMail = new RegExp(
+      "^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"
+    );
+    //验证密码
+    // let myPwd = /^[\w]{6,12}$/;
+    //验证 验证码
+    let myCode = /^\d{6}$/;
+
+    var userName = (rule, value, callback) => {
+      console.log("---------val", value);
+      if (value === "") {
+        this.isUserName = false;
+        callback(new Error("请输入手机号/邮箱"));
+      } else if (value.indexOf("@") > 0) {
+        console.log("----------邮箱");
+        this.captchaType = "EMAIL_FORGOT_PASSWORD";
+        if (!myMail.test(value)) {
+          this.isUserName = false;
+          callback(new Error("您输入的邮箱格式不正确"));
+        } else {
+          this.isUserName = true;
+          callback();
+        }
+      } else {
+        console.log("----------手机");
+        this.captchaType = "FORGOT_PASSWORD";
+        if (!myPhone.test(value)) {
+          callback(new Error("您输入的手机格式不正确"));
+          this.isUserName = false;
+        } else {
+          this.isUserName = true;
+          callback();
+        }
+      }
+    };
+    var pwd = (rule, value, callback) => {
+      console.log("-------this.userForm.pwd", this.userForm.pwd);
+      if (value === "") {
+        callback(new Error("请输入新密码"));
+      } 
+      // else if (!myPwd.test(value)) {
+      //   callback(
+      //     new Error(
+      //       "您输入的密码格式有误，正确的密码格式为 6-12 位 数字 + 字母 组成"
+      //     )
+      //   );
+      // }
+    };
+    var confirmPwd = (rule, value, callback) => {
+      console.log("-------this.userForm.confirmPwd", this.userForm.confirmPwd);
+      if (value === "") {
+        callback(new Error("请重新确认密码"));
+      } else if (value !== this.userForm.pwd) {
+        callback(new Error("您两次输入的密码不一致，请重新输入"));
+      } else {
+        this.isPwdOk = true;
+        callback();
+      }
+    };
+    var captcha = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入验证码"));
+      } else if (!myCode.test(value)) {
+        callback(new Error("验证码格式输入有误"));
+      }
+    };
+
+    return {
+      btnLoading: false, //加载圈
+      isUserName: false, //判断账户名输入是否正确
+      isCountDown: false, //是否转换倒计时按钮
+      isPwdOk: false, //判断两次密码是否正确
+      btnText: "获取验证码",
+      time: 60,
+      message: "", //提示消息
+      captchaType: "", //验证码类型
+      captchaKey: "", //验证码key
+      userForm: {
+        userName: "",
+        pwd: "",
+        confirmPwd: "",
+        captcha: ""
+      },
+      rules: {
+        userName: [
+          {
+            validator: userName,
+            trigger: "blur"
+          }
+        ],
+        pwd: [
+          {
+            validator: pwd,
+            trigger: "blur"
+          }
+        ],
+        confirmPwd: [
+          {
+            validator: confirmPwd,
+            trigger: "blur"
+          }
+        ],
+        captcha: [
+          {
+            validator: captcha,
+            trigger: "blur"
+          }
+        ]
+      }
+    };
+  },
+  created() {},
+  mounted() {},
+  methods: {
+    //点击 获取验证码 按钮
+    getCode() {
+      if (this.isUserName) {
+        if (this.btnText == "获取验证码") {
+          console.log("--------111");
+          this.submitCode();
+        } else {
+          this.time = 60;
+          // if(this.captchaType=="EMAIL_FORGOT_PASSWORD"){
+          //   this.submitCodeAgain();
+          // }else{
+          this.submitCode();
+          // }
+        }
+      } else {
+        if (this.userForm.userName === "") {
+          this.$message({
+            message: "请输入手机号/邮箱",
+            type: "warning"
+          });
+        }
+      }
+    },
+    //获取验证码
+    submitCode() {
+      this.isCountDown = true;
+      let timer = setInterval(() => {
+        this.time--;
+        if (this.time <= 1) {
+          this.isCountDown = false;
+          this.btnText = "重新发送";
+          clearInterval(timer);
+        }
+      }, 1000);
+      dataService.sendCaptcha(this.captchaType, this.userForm.userName).then(
+        res => {
+          console.log("---------发送验证码-res", res);
+          let code = res.data.code;
+          let msg = res.data.msg;
+          if (code == 200) {
+            this.captchaKey = res.data.data.captchaKey;
+            this.message = "验证码已发送！";
+            this.openSucess();
+          } else if (code == 500) {
+            this.message = msg;
+            this.openErr();
+          }
+        },
+        err => {
+          this.btnLoading = false;
+          this.message = "网络连接超时！";
+          this.openErr();
+        }
+      );
+    },
+    //重新获取验证码
+    // submitCodeAgain() {
+    //   console.log("-----邮件重新发送");
+    //   this.isCountDown = true;
+    //   let timer = setInterval(() => {
+    //     this.time--;
+    //     if (this.time <= 1) {
+    //       this.isCountDown = false;
+    //       this.btnText = "重新发送";
+    //       clearInterval(timer);
+    //     }
+    //   }, 1000);
+    //   dataService.reSendEmail(this.userForm.userName).then(res => {
+    //     console.log("---------发送验证码-res", res);
+    //     let code = res.data.code;
+    //     let msg = res.data.msg;
+    //     if (code == 200) {
+    //       this.captchaKey = res.data.data.captchaKey;
+    //       this.message = "验证码已发送！";
+    //       this.openSucess();
+    //     } else if (code == 500) {
+    //       this.message = msg;
+    //       this.openErr();
+    //     }
+    //   });
+    // },
+    //点击 确定 按钮
+    submitForm(formName) {
+      // console.log("----------userForm.userName", this.userForm.userName);
+      // console.log("----------userForm.pwd", this.userForm.pwd);
+      // console.log("----------userForm.captcha", this.userForm.captcha);
+      this.btnLoading = true;
+      if (this.isPwdOk) {
+        dataService
+          .findPwd(
+            this.userForm.userName,
+            this.userForm.pwd,
+            this.userForm.captcha,
+            this.captchaKey
+          )
+          .then(
+            res => {
+              console.log("-------修改密码-res", res);
+              this.btnLoading = false;
+              let code = res.data.code;
+              if (code == 200) {
+                this.message = "密码修改成功！";
+                this.openSucess();
+                localStorage.setItem("userName", this.userForm.userName);
+                setTimeout(() => {
+                  this.$router.push({ name: "login" });
+                }, 3000);
+              }else if (code == 500) {
+                this.message = "您输入的信息有误，请仔细确认！";
+                this.openErr();
+              }
+            },
+            err => {
+              this.btnLoading = false;
+            }
+          );
+      } else {
+        this.btnLoading = false;
+        this.message = "您输入的信息有误，请仔细确认！";
+        this.openErr();
+      }
+    },
+    openErr() {
+      this.$message({
+        message: this.message,
+        type: "error"
+      });
+    },
+    openSucess() {
+      this.$message({
+        message: this.message,
+        type: "success"
+      });
+    }
+  }
+};
+</script>
+<style lang="scss">
+.forgetPwd {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  .forgetPwd-top {
+    width: 100%;
+    height: 400px;
+    background-image: url(../../assets/images/bg.png);
+    background-size: 100% 100%;
+  }
+  .forgetPwd-container {
+    position: absolute;
+    top: 100px;
+    left: 0;
+    right: 0;
+    width: 650px;
+    min-height: 200px;
+    margin: 0 auto;
+    text-align: center;
+    .forgetPwd-text {
+      color: #f7f7f7;
+    }
+    .user-head {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      padding: 10px;
+      background: #f7f7f7;
+      margin-bottom: 30px;
+    }
+    .demo-ruleForm {
+      padding: 20px 10px;
+      background: #f7f7f7;
+      border-radius: 10px;
+      margin: 30px 0;
+      img {
+        vertical-align: middle;
+        width: 20px;
+      }
+      .el-form-item__content {
+        margin-left: 0 !important;
+        padding: 10px 0;
+        border-bottom: 1px solid #b5d2df;
+        .el-input {
+          width: 70%;
+          .el-input__inner {
+            width: 95%;
+            height: 40px;
+            border: none;
+          }
+        }
+        .el-button {
+          width: 120px;
+          margin: 0;
+        }
+      }
+      input::-ms-input-placeholder {
+        text-align: center;
+      }
+      input::-webkit-input-placeholder {
+        text-align: center;
+      }
+    }
+    .forgetPwd-btn {
+      width: 100%;
+      height: 50px;
+      font-size: 16px;
+      border-radius: 10px;
+      background: #56bdff;
+      color: #f7f7f7;
+    }
+  }
+}
+</style>

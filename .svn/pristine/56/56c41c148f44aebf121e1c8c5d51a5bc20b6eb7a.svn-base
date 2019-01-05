@@ -1,0 +1,133 @@
+<template>
+  <div class="nav-header cnfont">
+    <div v-if="showBack" class="nav-header-left" @click="handleClickBack">
+      <i class="back-arrow"></i>
+    </div>
+    <div v-else class="nav-header-img">
+        <img src="static/images/head.png" class="header-img">
+        <div class="nav-header-vip">
+          <p style="color:#EDF79D">{{userName}}</p>
+          <p v-if="vipDay>0" style="color:#f7f7f7">vip有效期：{{vipDay}}天</p>
+          <p v-if="vipDay==0" style="color:#f7f7f7">vip已过期</p>
+        </div>
+    </div>
+    <div class="nav-header-title">
+      <span v-if="title" class="title">{{title}}</span>
+      <slot v-else name='title'></slot>
+    </div>
+    <div class="nav-header-right">
+      <slot name='right'></slot>
+    </div>
+  </div>
+</template>
+<script>
+export default {
+  props: {
+    title: {
+      type: String
+    },
+    goBackUrl: [String, Object],
+    showBack: {
+      type: Boolean,
+      default: true
+    }
+  },
+  mounted(){
+    this.userName=localStorage.getItem("userName");
+    this.vipDay=localStorage.getItem("vipDay");
+    console.log("------------this.vipDay",this.vipDay);
+  },
+  data() {
+    return {
+      userName:"",
+      vipDay:null,
+    };
+  },
+  methods: {
+    handleClickBack(e) {
+      if (!this.goBackUrl) {
+        this.$router.go(-1);
+      } else {
+        this.$router.push(this.goBackUrl);
+      }
+    }
+  }
+};
+</script>
+
+<style lang='scss'>
+.nav-header {
+  position: relative;
+  box-sizing: border-box;
+  height: 70px;
+  line-height: 70px;
+  font-size: 18px;
+  background: linear-gradient(to right, #25a9fe, #06e1ff);
+  background: -webkit-linear-gradient(to right, #25a9fe, #06e1ff);
+  background: -o-linear-gradient(to right, #25a9fe, #06e1ff);
+  background: -moz-linear-gradient(to right, #25a9fe, #06e1ff);
+  z-index: 20;
+  .nav-header-left {
+    position: absolute;
+    height: 100%;
+    width: 100px;
+    z-index: 2;
+    .back-arrow {
+      position: absolute;
+      width: 100px;
+      height: 30px;
+      top: 0px;
+      left: 0px;
+    }
+    .back-arrow::before {
+      content: "";
+      position: absolute;
+      width: 15px;
+      height: 15px;
+      border: 3px solid #ffffff;
+      border-width: 2px 0 0 2px;
+      transform: rotate(315deg);
+      top: 28px;
+      left: 50px;
+    }
+  }
+  .nav-header-img {
+    position: absolute;
+    height: 100%;
+    width: 190px;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    font-size: 16px;
+    margin-left: 20px;
+    .header-img {
+      width: 70px;
+      border-radius: 50%;
+      padding: 3px;
+      box-sizing: border-box;
+    }
+    .nav-header-vip {
+      margin-top: 10px;
+      p {
+        line-height: 25px;
+      }
+    }
+  }
+  .nav-header-title {
+    position: absolute;
+    color: #ffffff;
+    margin: 0 auto;
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .nav-header-right {
+    position: absolute;
+    right: 0;
+    height: 100%;
+    z-index: 2;
+  }
+}
+</style>

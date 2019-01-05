@@ -1,0 +1,404 @@
+<template>
+  <div class="login">
+    <div class="login">
+      <p class="tips" v-show="showWarn">为了能正常使用闪记星后台管理系统，我们推荐你使用
+        <a href="http://browser.qq.com/">QQ 浏览器</a>、
+        <a href="https://browser.360.cn/ee/">360 极速浏览器</a>、
+        <a href="https://www.google.cn/chrome/">Chrome 浏览器</a> 
+        等更棒的浏览
+      </p>
+      <router-link to='/'>
+        <img src="static/images/logo.png" alt="">
+      </router-link>
+      <div class="login-container" v-if="!hasUser">
+        <img class="user-head" :src="icon" alt="">
+        <el-form :model="userForm" ref="userForm" :rules="rules" label-width="100px" class="demo-ruleForm">
+          <el-form-item prop="userName">
+            <img src="static/images/zhanghu.png" alt="">
+            <el-input type="text" placeholder="请输入帐号/手机号/邮箱" v-model="userForm.userName" auto-complete="off" clearable></el-input>
+          </el-form-item>
+          <el-form-item prop="pwd">
+            <img src="static/images/mima.png" alt="">
+            <el-input type="password" placeholder="请输入密码" v-model="userForm.pwd" auto-complete="off" clearable @keyup.enter.native="submitForm"></el-input>
+          </el-form-item>
+        </el-form>
+        <el-button type="primary" class="login-btn" :loading="btnLoading" @click="submitForm">登陆</el-button>
+        <div class="login-foot">
+          <router-link class="go-regist" :to="{name:'registry'}">注册</router-link>
+          <router-link to='/forgetPwd' class='go-pwd'>忘记密码</router-link>
+        </div>
+      </div>
+      <changeUser v-if="hasUser" v-on:isChange='resiveChild' v-on:passUserName="resiveChildName"></changeUser>
+    </div>
+  </div>
+</template>
+
+<script>
+import dataService from "@/service/index";
+import { iconPath } from "@/service/urlConfig";
+import changeUser from "./chilren/changeUser";
+
+export default {
+  mounted() {
+    //获取本地存储
+    this.userInform = JSON.parse(localStorage.getItem("userInform"));
+    console.log("-----this.userInform11111", this.userInform);
+    if (this.userInform) {
+      this.hasUser = true;
+    } else {
+      this.hasUser = false;
+    }
+
+    let icon = localStorage.getItem("icon");
+    console.log("--------------icon undefined", typeof icon);
+    if (icon) {
+      console.log("--------------icon undefined");
+      icon = this.iconPath + icon;
+    } else {
+      icon = "static/userAvatar/default.png";
+    }
+    this.icon = icon || "";
+    this.icon = "static/userAvatar/default.png";
+    this.userForm.userName = localStorage.getItem("userName");
+    if (localStorage.getItem("studentNo")) {
+      this.$router.replace({ name: "home" });
+    }
+
+    // localStorage.clear();
+    let explorer = window.navigator.userAgent;
+    if (
+      explorer.match(
+        /(Android|webOS|iPhone|iPad|iPod|BlackBerry|Windows Phone)/i
+      )
+    ) {
+      this.showWarn = false;
+    } else {
+      // this.showWarn = true;
+      if (explorer.indexOf("Chrome") > 0) {
+        this.showWarn = false;
+      } else {
+        this.showWarn = true;
+      }
+    }
+  },
+  data() {
+    // 验证手机号
+    // let myPhone = /^[1][3,4,5,6,7,8,9][0-9]{9}$/;
+    // 验证邮箱
+    let myMail = new RegExp(
+      "^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"
+    );
+    // 验证密码
+    let myPwd = /^[\w]{6,12}$/;
+
+    var userName = (rule, value, callback) => {
+      console.log("---------val", value);
+      if (value === "") {
+        this.isLogin = false;
+        callback(new Error("请输入帐号/手机号/邮箱"));
+      } else if (value.indexOf("@") > 0) {
+        console.log("----------邮箱");
+        if (!myMail.test(value)) {
+          this.isLogin = false;
+          callback(new Error("您输入的邮箱格式不正确"));
+        } else {
+          this.isLogin = true;
+          callback();
+        }
+      } else {
+        console.log("----------手机");
+        // if (!myPhone.test(value)) {
+        // this.isLogin = false;
+        // callback(new Error("您输入的手机格式不正确"));
+        // } else {
+        this.isLogin = true;
+        callback();
+        // }
+      }
+    };
+    var pwd = (rule, value, callback) => {
+      if (value === "") {
+        this.isLogin = false;
+        callback(new Error("请输入密码"));
+      } else {
+        if (!myPwd.test(value)) {
+          this.isLogin = false;
+          callback(
+            new Error(
+              "您输入的密码格式有误，正确的密码格式为 6-12 位 数字 + 字母 组成"
+            )
+          );
+        } else {
+          this.isLogin = true;
+          callback();
+        }
+      }
+    };
+    return {
+      showWarn: false,
+      hasUser: true,
+      icon: "",
+      iconPath: iconPath,
+      btnLoading: false, // 加载圈
+      isLogin: false, // 是否可以登陆
+      message: "", // 提示消息
+      vipDay: 0, // vip有效时间
+      userInform: [], //用于存储本地 用户信息
+      userForm: {
+        userName: "",
+        pwd: ""
+      },
+      rules: {
+        userName: [
+          {
+            validator: userName,
+            trigger: "blur"
+          }
+        ],
+        pwd: [
+          {
+            validator: pwd,
+            trigger: "blur"
+          }
+        ]
+      }
+    };
+  },
+  methods: {
+    submitForm() {
+      console.log("------登陆");
+      if (this.isLogin) {
+        this.btnLoading = true;
+        dataService.login(this.userForm.userName, this.userForm.pwd).then(
+          res => {
+            this.btnLoading = false;
+            console.log("-----登陆--res", res);
+            let code = res.data.code;
+            if (code === 200) {
+              // 计算vip 剩余时间
+              let resultData = res.data.data;
+              let token = resultData.token;
+              localStorage.setItem("token", token); // 存储token
+              let serverTime = resultData.serverTime;
+              let vipDeadTime = resultData.vipDeadTime;
+              let studentNo = resultData.studentNo;
+              let date1 = new Date(serverTime);
+              let date2 = new Date(vipDeadTime);
+              let s1 = date1.getTime();
+              let s2 = date2.getTime();
+              if (s1 >= s2) {
+                this.vipDay = 0;
+              } else {
+                let totalTime = (s2 - s1) / 1000;
+                let day = parseInt(totalTime / (24 * 60 * 60)); // 计算整数天数
+                let afterDay = totalTime - day * 24 * 60 * 60; // 取得算出天数后剩余的秒数
+                if (afterDay > 0) {
+                  this.vipDay = day + 1;
+                } else {
+                  this.vipDay = day;
+                }
+              }
+
+              localStorage.setItem("icon", resultData.icon || "");
+              localStorage.setItem("userName", this.userForm.userName);
+              localStorage.setItem(
+                "nickName",
+                resultData.name || this.userForm.userName
+              );
+
+              localStorage.setItem("vipDay", this.vipDay);
+              localStorage.setItem("studentNo", studentNo);
+
+              //本地存储 用户信息
+              console.log("-------this.userInform", this.userInform);
+              let n = [];
+              let name = resultData.name;
+              let icon = resultData.icon;
+
+              console.log("-------name", name);
+              if (this.userInform) {
+                this.userInform.forEach(e => {
+                  n.push(e.userName);
+                });
+                console.log("-------n", n);
+                if (
+                  n.find(e => {
+                    return e == this.userForm.userName;
+                  })
+                ) {
+                  this.$router.replace({ name: "home" });
+                } else {
+                  if (name) {
+                    let newObj = {
+                      userName: this.userForm.userName,
+                      // pwd: this.userForm.pwd,
+                      name: name,
+                      icon:icon
+                    };
+                    this.userInform.push(newObj);
+                  } else {
+                    let newObj = {
+                      userName: this.userForm.userName,
+                      // pwd: this.userForm.pwd,
+                      name: this.userForm.userName,
+                      icon:icon
+                    };
+                    this.userInform.push(newObj);
+                  }
+                  localStorage.setItem(
+                    "userInform",
+                    JSON.stringify(this.userInform)
+                  );
+                  this.$router.replace({ name: "home" });
+                }
+              } else {
+                this.userInform = [];
+                if (name) {
+                  let newObj = {
+                    userName: this.userForm.userName,
+                    // pwd: this.userForm.pwd,
+                    name: name,
+                    icon:icon
+                  };
+                  this.userInform.push(newObj);
+                } else {
+                  let newObj = {
+                    userName: this.userForm.userName,
+                    // pwd: this.userForm.pwd,
+                    name: this.userForm.userName,
+                    icon:icon
+                  };
+                  this.userInform.push(newObj);
+                }
+                localStorage.setItem(
+                  "userInform",
+                  JSON.stringify(this.userInform)
+                );
+                this.$router.replace({ name: "home" });
+              }
+            } else if (code === 500) {
+              this.message = res.data.msg;
+              this.$message.error(res.data.msg);
+            }
+          },
+          () => {
+            this.btnLoading = false;
+            // this.message = "网络连接超时！";
+            // this.openErr();
+          }
+        );
+      }
+    },
+    resiveChild(data) {
+      console.log("-------data", data);
+      this.hasUser = data;
+    },
+    resiveChildName(data){
+      console.log("-------childName", data);
+      this.userForm.userName=data;
+    },
+    openErr() {
+      this.$message({
+        message: this.message,
+        type: "error"
+      });
+    },
+    openSucess() {
+      this.$message({
+        message: this.message,
+        type: "success",
+        duration: 900
+      });
+    }
+  },
+  components: {
+    changeUser
+  }
+};
+</script>
+<style lang="scss">
+.login {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: url(../../assets/images/login.png);
+  background-size: 100%;
+  min-width: 1060px;
+  .login-container {
+    width: 650px;
+    min-height: 200px;
+    margin: 0 auto;
+    text-align: center;
+    .login-text {
+      color: #f7f7f7;
+    }
+    .user-head {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      padding: 2px;
+      background: #f7f7f7;
+      margin: 30px 0;
+    }
+    .demo-ruleForm {
+      padding: 20px 10px;
+      background: rgba(247, 247, 247, 0.9);
+      border-radius: 10px;
+      margin: 30px 0;
+      img {
+        vertical-align: middle;
+        width: 20px;
+      }
+      .el-form-item__content {
+        margin-left: 0 !important;
+        padding: 10px 0;
+        border-bottom: 1px solid #b5d2df;
+        .el-input {
+          width: 90%;
+          .el-input__inner {
+            width: 98%;
+            height: 40px;
+            border: none;
+          }
+        }
+      }
+    }
+    .login-btn {
+      width: 100%;
+      height: 50px;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    .login-foot {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #f7f7f7;
+      margin-top: 10px;
+
+      .go-regist {
+        text-align: right;
+        color: #409eff;
+        text-decoration: none;
+      }
+      .go-pwd {
+        text-align: left;
+        color: #f56c6c;
+        text-decoration: none;
+      }
+    }
+  }
+  .tips {
+    font-size: 16px;
+    color: #33332f;
+    background: #fff;
+    border-radius: 10px;
+    width: 80%;
+    margin-top: 10px;
+    height: 50px;
+    line-height: 50px;
+    margin: 0;
+    margin: 20px 10%;
+  }
+}
+</style>

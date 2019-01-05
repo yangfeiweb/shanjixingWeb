@@ -1,0 +1,24 @@
+import _ from "lodash";
+import test from "./pageUrl/test";
+import learnIndex from "./pageUrl/learnIndex";
+import auth from "./pageUrl/auth";
+import person from "./pageUrl/person"
+
+
+
+
+
+// const apiRoot = "http://shanjixing.bigabc.cn/qapi/api/";
+export let apiRoot = "http://192.168.0.88:13001/api/";
+export const ResourcePath = "http://res.shanjixing.com";
+
+// export let apiRoot = "/api";
+if (process.env.NODE_ENV == "development") {
+    apiRoot = "/api";
+}
+export default _.merge(
+    test(apiRoot),
+    learnIndex(apiRoot),
+    auth(apiRoot),
+    person(apiRoot)
+);

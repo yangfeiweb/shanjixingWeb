@@ -1,0 +1,163 @@
+<template>
+    <div class="learnDialog">
+        <el-dialog :title="warnDislog?titles:'学习提示'" :visible.sync="dialogShow" width="30%" @close='dialogHide' :show-close='false' center>
+            <div v-if="reviewShow">
+                <p>{{warnContent[0]}}</p>
+                <p>{{warnContent[1]}}</p>
+                <p>{{warnContent[2]}}</p>
+                <p class="redP">{{warnContent[3]}}</p>
+            </div>
+            <p v-if="chapterTestShow">{{warnContent[0]}}</p>
+            <div v-if="learnOverShow">
+                <p>恭喜您，本章节学习完成！</p>
+                <p>单词总数:{{learnDataDialog.columnPlan}},生词:{{learnDataDialog.newWord}}</p>
+            </div>
+            <span v-if="chapterTestShow||reviewShow" slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="test">是</el-button>
+                <el-button @click="clickNo">否</el-button>
+            </span>
+            <span v-if="learnOverShow" slot="footer" class="dialog-footer bottonStyle">
+                <el-button v-show="hanShow" @click="test">章节学后测试</el-button>
+                <el-button type="primary" @click="goOnLearn">继续学习</el-button>
+                <el-button @click="backCourse">返回我的课程</el-button>
+            </span>
+        </el-dialog>
+    </div>
+</template>
+<script>
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    },
+    promptContent: {
+      type: String,
+      required: true
+    },
+    Dialogtitle: {
+      type: String
+    },
+    learnDataDialog: {
+      type: Object
+    }
+  },
+  components: {},
+  watch: {
+    show(val) {
+      this.dialogShow = val;
+    },
+    promptContent(val) {
+      console.log(val);
+      if (val === "learnOver") {
+        console.log("学习完毕");
+        this.prompt = true;
+        this.warnDislog = true;
+        this.learnOverShow = true;
+        this.chapterTestShow = false;
+        this.reviewShow = false;
+        this.hanShow = true;
+      } else if (val === "learnOverHan") {
+        this.prompt = true;
+        this.warnDislog = true;
+        this.learnOverShow = true;
+        this.chapterTestShow = false;
+        this.reviewShow = false;
+        this.hanShow = false;
+      } else if (val === "clearLearn") {
+        this.prompt = true;
+        this.reviewShow = true;
+        this.learnOverShow = false;
+        this.chapterTestShow = false;
+        this.warnDislog = false;
+        this.warnContent[0] = "本章节已学习完成！";
+        this.warnContent[1] = "如果想冲重新学习,需要清空原来的学习记录。";
+        this.warnContent[2] = "记录清空后将无发安排只能复习！";
+        this.warnContent[3] = "确定要清空吗？";
+      } else if (val === "chapterTest") {
+        this.warnContent[0] = "是否要进行章节前测试？";
+        this.warnDislog = false;
+        this.chapterTestShow = true;
+        this.reviewShow = false;
+        this.learnOverShow = false;
+      }
+    },
+    Dialogtitle(val) {
+      console.log(val);
+      this.titles = val;
+    }
+  },
+  data() {
+    return {
+      dialogShow: false,
+      hanShow: false,
+      warnContent: [],
+      chapterTestShow: false,
+      reviewShow: false,
+      learnOverShow: false,
+      titles: "学习提示",
+      prompt: "",
+      warnDislog: false
+    };
+  },
+  methods: {
+    clickNo() {
+      this.dialogShow = false;
+      if ((this.prompt === true)) {
+        this.$parent.getBookColumnLearnWords("learn");
+      }
+    },
+    dialogHide() {
+      this.$emit("update:show", false);
+    },
+    test() {
+      console.log(this.reviewShow);
+      if (!this.reviewShow) {
+        this.$parent.test();
+      } else {
+        this.$parent.clearLearn();
+      }
+    },
+    backCourse() {
+      this.$router.push("courseCenter");
+    },
+    goOnLearn() {
+      this.dialogShow = false;
+      this.$parent.getBookColumnLearnWords("learn");
+    }
+  },
+  mounted() {}
+};
+</script>
+<style lang="scss">
+.learnDialog {
+  .el-dialog__headerbtn .el-dialog__close {
+    color: #fff;
+  }
+  .elDialog {
+    .el-dialog {
+      margin-top: 5vh !important;
+    }
+  }
+  .el-dialog--center .el-dialog__body {
+    padding: 0px;
+    margin: 10px 0px;
+  }
+  .redP {
+    color: #ff7878;
+  }
+  .volumeContent {
+    padding-bottom: 10px;
+  }
+  p {
+    height: 40px;
+    line-height: 40px;
+    font-size: 16px;
+  }
+  .bottonStyle {
+    .el-button {
+      padding: 10px 20px !important;
+    }
+  }
+}
+</style>

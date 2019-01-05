@@ -1,0 +1,1609 @@
+<template>
+    <div class="learnIndex" v-loading='loadingShow' element-loading-spinner="el-icon-loading" element-loading-background="rgba(128,128,128, 0.8)">
+        <div class="header">
+            <nav-header>
+                <div slot="title" class="shopping-title">
+                    <div class='areas'>
+                        <span class="area-item">{{title}}</span>
+                    </div>
+                </div>
+            </nav-header>
+        </div>
+        <div class="learnMain">
+            <sidebar v-on:siderData="sidebarFun" v-on:columnNoSider="columnNoSiders" :catalogList='catalogList' :columnNoIndex='columnNoIndexs' ref="sidebar">
+            </sidebar>
+            <el-tabs v-show="trackListShow" class="elTabs" v-model="trackListValue" type="card" @tab-click="clickTab">
+                <el-tab-pane key='-' value='-' name='-1' :label="trackListValue==='-1'?'-':learnArr[learnIndex].content1">
+                </el-tab-pane>
+                <el-tab-pane v-for="(item, index) in trackList" :key='index' :name="index+''" :value='item.content1' :label="trackListValue===(index+'')?'-':item.content1">
+                </el-tab-pane>
+            </el-tabs>
+            <el-tabs v-show="!trackListShow" class="elTabs" v-model="trackListValue" type="card">
+                <el-tab-pane key='-' value='-' name='-1' :label="trackListValue==='-1'?'-':learnArr[learnIndex].content1">
+                </el-tab-pane>
+            </el-tabs>
+            <recognition v-show="learnType==='DEFAULT'||learnType==='LISTEN'" :audioImgUrl='audioImgUrl' :learnType='learnType' :imgShow='imgShow' :learnWordInfos='learnWordInfo' :btnData='btnData' :colorWord='colorWord'></recognition>
+            <spelling :testType='learnType' v-show="learnType==='SPELL'" :learnWordInfos='learnWordInfo' :colorWord='colorWord'></spelling>
+            <audio v-if="learnWordInfo.content7" @ended="playEnded(siderData.selectPlayCount)" ref="audioWord" preload :src="audioPaths+learnWordInfo.content7"></audio>
+            <div class="asideRight">
+                <div class="iconDiv">
+                    <i @click="getWordList" v-show="wordListDialogShow" class="iconfont icon-liebiao1 wordList"></i>
+                    <i @click="getAudio" class="brainWave">
+                        <img v-show='!brainPlay' src="../../assets/images/brain.png" alt="">
+                        <img v-show='brainPlay' src="../../assets/images/brainLight.png" alt="">
+                    </i>
+                </div>
+            </div>
+            <audio ref="WordCorrect" preload src="../../static/audio/s.mp3"></audio>
+            <audio ref="WordAnswer" preload src="../../static/audio/a.mp3"></audio>
+            <audio ref="WordErr" preload src="../../static/audio/e.mp3"></audio>
+        </div>
+        <learnFooter :fonterData='siderData'></learnFooter>
+        <learn-dialog :show.sync='siderData.dialogShow' :learnDataDialog='siderData' :promptContent='promptContents' :Dialogtitle='Dialogtitles'>
+        </learn-dialog>
+        <exam-dialog :show.sync='examShow' :examData='examData'> </exam-dialog>
+        <brainWave-dialog :show.sync='brainWaveShow' @onPlay='onBrainPlay'>
+        </brainWave-dialog>
+        <wordList-dialog :show.sync='wordListShow' :wordListData='wordListDatas'>
+        </wordList-dialog>
+    </div>
+</template>
+<script>
+import Base64 from "crypto-js/enc-base64";
+import Utf8 from "crypto-js/enc-utf8";
+import dataService from "@/service/index";
+import { imgPath, audioPath } from "@/service/urlConfig";
+import navHeader from "@/components/navHeader";
+import examDialog from "@/components/examDialog";
+import learnFooter from "./children/learnFooter";
+import sidebar from "./children/learnSidebar";
+import wordListDialog from "./children/wordListDialog";
+import learnDialog from "./children/learnDialog";
+import brainWaveDialog from "./children/brainWaveDialog";
+import recognition from "./children/recognition";
+import spelling from "./children/spelling";
+export default {
+  components: {
+    navHeader,
+    learnFooter,
+    sidebar,
+    examDialog,
+    wordListDialog,
+    learnDialog,
+    brainWaveDialog,
+    recognition,
+    spelling
+  },
+  data() {
+    return {
+      audioImgUrl: "../../../assets/images/listen.gif",
+      learnType: "DEFAULT",
+      examShow: false,
+      imgShow: false,
+      catalogList: [],
+      bookInfo: {},
+      examData: {},
+      columnNoIndexs: "",
+      // 图片URL
+      imgPaths: imgPath,
+      audioPaths: audioPath,
+      loadingShow: true,
+      //
+      columnNeedReview: "",
+      // 侧边栏数据
+      siderData: {},
+      // 单词列表
+      wordListDatas: [],
+      // 单词弹框
+      wordListShow: false,
+      // 提示内容
+      promptContents: "",
+      Dialogtitles: "",
+      // 脑波弹框
+      brainWaveShow: false,
+      // 标题
+      title: "",
+      //
+      num: 0,
+      // 轨迹数组
+      trackListShow: true,
+      trackList: [],
+      // 轨迹规则
+      trackListPosition: [3, 6, 12, 24, 48],
+      colors: "color7",
+      colorWord: "color7",
+      // 选中轨迹中的单词
+      trackListValue: "-1",
+      // 当前栏目的总单词列表
+      totalWordList: [],
+      learnWordInfo: {},
+      // 按钮相关变量
+      btnData: {
+        answerBtnShow: true,
+        successaAnswerShow: false,
+        wrongBtnShow: false,
+        nextBtnShow: false,
+        answerShow: false,
+        learnTypeShow: false,
+        listenShow: true,
+        listen1Show: false,
+        spllingNextBtnShow: false
+      },
+      leranWordStartTime: "",
+      clickCorrectTime: "",
+      clickErrTime: "",
+      clickAnswerTime: "",
+      t1: 0,
+      t2: 0,
+      t3: 0,
+      wordListDialogShow: true,
+      columnArr: [],
+      columnIndex: 0,
+      columnNo: "",
+      quickPreviewArr: [],
+      previewIndex: 0,
+      reviewArr: [],
+      reviewIndex: 0,
+      learnArr: [],
+      learnIndex: 0,
+      // 错误单词信息
+      worngWordData: [],
+      clickNum: 0,
+      // 当前类型
+      currentType: "review",
+      bookNo: "",
+      catalogListArr: {},
+      learnJsonData: {
+        studentNo: "",
+        bookNo: "",
+        learnType: "",
+        columns: [
+          {
+            columnNo: "",
+            rightNum: 0,
+            wrongNum: 0,
+            status: "",
+            createTime: "",
+            updateTime: "",
+            learns: [],
+            wordNotes: [],
+            records: {
+              time: "",
+              rightNum: 0,
+              wrongNum: 0,
+              learnTimes: 0,
+              learnSeconds: "",
+              createTime: ""
+            }
+          }
+        ]
+      },
+      learnSeconds: 0,
+      rightNums: 0,
+      wrongNums: 0,
+      brainPlay: false,
+      syncType: "BOOK",
+      bookType: "",
+      reviewNumData: 0,
+      currentTrackList: "N",
+      wordState: "default"
+    };
+  },
+  watch: {
+    columnNo(val) {
+      this.learnJsonData.columns[0].columnNo = this.columnNo;
+      if (this.currentType === "learn") {
+        this.columnNo = val;
+      }
+    },
+    currentType(val) {
+      if (val === "learn") {
+        this.wordListDialogShow = true;
+      } else {
+        this.wordListDialogShow = false;
+      }
+    }
+  },
+  destroyed() {
+    if (
+      this.learnJsonData.columns[0].learns.length > 0 ||
+      this.learnJsonData.columns[0].wordNotes.length > 0
+    ) {
+      if (this.currentType === "review") {
+        // 如果为复习的话删除records对象
+        this.$delete(this.learnJsonData.columns[0], "records");
+      } else {
+        // 如果为学习  将数据补充完整
+        let columns = this.learnJsonData.columns[0];
+        columns.records.time = this.formatDateTime(new Date(), "YMD");
+        columns.records.rightNum = this.rightNums;
+        columns.records.wrongNum = this.wrongNums;
+        columns.records.learnTimes = this.rightNums + this.wrongNums;
+        columns.records.learnSeconds = this.learnSeconds;
+        columns.rightNum =
+          this.siderData.learnWord > this.siderData.totalWord
+            ? this.siderData.totalWord
+            : this.siderData.learnWord;
+        columns.wrongNum = this.wrongNums;
+        columns.updateTime = this.formatDateTime(new Date(), "YM");
+      }
+      this.learnDataBase = Base64.stringify(
+        Utf8.parse(JSON.stringify(this.learnJsonData))
+      );
+      this.addLearnWords();
+    }
+  },
+  mounted() {
+    this.bookInfo = this.$route.params.bookInfo;
+    this.learnType = this.$route.params.learnType;
+    if (this.bookInfo === undefined) {
+      this.$router.replace({ name: "learnCenter" });
+    } else {
+      this.bookType = this.bookInfo.bookSort;
+      this.bookNo = this.bookInfo.bookNo;
+      this.siderData.bookNo = this.bookNo;
+      if (this.learnType === "SPELL") {
+        this.trackListShow = false;
+      } else {
+        this.trackListShow = true;
+      }
+      this.learnJsonData.studentNo = this.bookInfo.studentNo;
+      this.learnJsonData.bookNo = this.bookNo;
+      this.learnJsonData.learnType = this.learnType;
+      this.siderData.totalWord = this.bookInfo.words;
+    }
+  },
+  computed: {},
+  methods: {
+    //   当前需要学习的栏目编号
+    columnNoSiders(val) {
+      if (val === "undefined") {
+        this.$message("当天课程已学完，请明天再来！");
+        this.$router.replace({ name: "learnCenter" });
+      } else {
+        this.columnNo = val;
+        if (this.currentType === "preview") {
+          this.previewIndex = 0;
+          this.siderData.previewLearnWord = this.previewIndex;
+        }
+        if (this.reviewNumData > 0) {
+          this.getBookColumnLearnWords();
+          this.getBookColumnAllWords();
+        } else {
+          this.getBookReviewWords();
+        }
+        if (
+          this.learnJsonData.columns[0].wordNotes.length > 0 ||
+          this.learnJsonData.columns[0].learns.length > 0
+        ) {
+          let learnColumns = this.learnJsonData.columns[0];
+          if (learnColumns.records) {
+            learnColumns.records.time = this.formatDateTime(new Date(), "YMD");
+            learnColumns.records.rightNum = learnColumns.learns.length;
+            learnColumns.records.wrongNum = learnColumns.wordNotes.length;
+            learnColumns.records.learnTimes = this.rightNums + this.wrongNums;
+            learnColumns.records.learnSeconds = this.learnSeconds;
+          }
+          learnColumns.rightNum =
+            this.siderData.learnWord > this.siderData.totalWord
+              ? this.siderData.totalWord
+              : this.siderData.learnWord;
+          learnColumns.wrongNum = this.siderData.newWord;
+          learnColumns.updateTime = this.formatDateTime(new Date(), "YM");
+          this.learnDataBase = Base64.stringify(
+            Utf8.parse(JSON.stringify(this.learnJsonData))
+          );
+          this.addLearnWords();
+        }
+      }
+    },
+    //   侧边栏的数据
+    sidebarFun(data) {
+      this.siderData = data;
+      if (this.siderData) {
+        if (!this.siderData.pause) {
+          this.columnNo = this.siderData.needLearnColumnNo;
+          this.columnNoIndexs = this.columnNo;
+        }
+        this.promptContents = this.siderData.warnDialogStatus;
+        this.Dialogtitles = this.siderData.previewTitle;
+        this.title = this.Dialogtitles;
+        this.columnArr = data.catalogList;
+        this.catalogList = data.catalogList;
+        this.columnArr.forEach((item, index) => {
+          if (this.columnNo === item.columnNo) {
+            this.columnIndex = index;
+            this.status = item.status;
+            this.catalogListArr = item;
+          }
+        });
+        if (this.siderData.selectPlayCount !== "") {
+          this.imgShow = true;
+          this.btnData.answerBtnShow = false;
+          this.siderData.columnNeedReview = "preview";
+          this.currentType = "preview";
+          if (this.siderData.needLearnColumnNo) {
+            if (this.siderData.pause) {
+              if (this.siderData.pause) {
+                this.learnWordInfo = this.quickPreviewArr[this.previewIndex];
+                if (this.learnType === "LISTEN") {
+                  this.btnData.listenShow = false;
+                }
+              }
+            } else {
+              this.getBookColumnAllWords();
+              this.wordListDialogShow = false;
+              this.preview();
+              if (this.learnType === "LISTEN") {
+                this.btnData.listenShow = false;
+              }
+            }
+          }
+        } else {
+          if (this.siderData.stopPlay) {
+            this.siderData.columnNeedReview = "N";
+            this.currentType = "learn";
+            this.learnWordInfo = this.learnArr[this.learnIndex];
+            this.imgShow = false;
+            this.btnData.answerBtnShow = true;
+            this.btnData.answerShow = false;
+            this.previewIndex = 0;
+          }
+        }
+      }
+    },
+    // 预览
+    preview() {
+      if (this.siderData.stopPlay) {
+        this.imgShow = false;
+        this.previewIndex = 0;
+        this.wordListDialogShow = true;
+        this.btnData.answerShow = false;
+        this.btnData.answerBtnShow = true;
+      } else {
+        if (this.learnType === "LISTEN") {
+          this.btnData.listenShow = false;
+        }
+        this.btnData.answerShow = true;
+        this.playAudio();
+      }
+    },
+    // 播放音频
+    playAudio() {
+      this.$nextTick(() => {
+        let audioWords = this.$refs.audioWord;
+        audioWords.play();
+      });
+    },
+    // 点击继续学习
+    continueLearn() {
+      this.$refs.sidebar.getBookColumn();
+    },
+    wordPlay() {
+      this.playAudio();
+    },
+    // 检测audio播放
+    playEnded(playNum) {
+      if (!this.siderData.stopPlay && !this.siderData.pause) {
+        if (this.siderData.selectPlayCount) {
+          if (this.num < parseFloat(playNum)) {
+            let audioWords = this.$refs.audioWord;
+            this.num++;
+            audioWords.play();
+          } else {
+            setTimeout(() => {
+              this.nextWord();
+            }, 1000);
+            this.num = 0;
+          }
+        }
+      }
+      if (this.learnType === "LISTEN") {
+        if (!this.siderData.selectPlayCount) {
+          if (this.btnData.answerBtnShow) {
+            this.btnData.listen1Show = true;
+            this.btnData.listenShow = false;
+          }
+        }
+      }
+    },
+    // 下一个单词
+    nextWord() {
+      if (!this.siderData.stopPlay) {
+        this.previewIndex++;
+        this.siderData.previewLearnWord = this.previewIndex;
+        if (this.previewIndex >= this.quickPreviewArr.length) {
+          // 预览完毕提示
+          this.columnIndex++;
+          if (this.columnIndex >= this.columnArr.length) {
+            this.$refs.sidebar.getplay();
+            this.siderData.columnNeedReview = "N";
+            this.$message({
+              showClose: true,
+              message: "本课本已经预览完毕",
+              type: "warning"
+            });
+            this.wordListDialogShow = true;
+            this.quickPreviewArr = [];
+            this.previewIndex = 0;
+            this.columnNo = this.siderData.needLearnColumnNo;
+            this.columnNoIndexs = this.columnNo;
+            this.learnWordInfo = this.learnArr[this.learnIndex];
+          } else {
+            this.columnNo = this.columnArr[this.columnIndex].columnNo;
+            this.columnNoIndexs = this.columnNo;
+            this.siderData.name = this.columnArr[this.columnIndex].name;
+            this.title = this.siderData.name;
+            this.siderData.columnPlan = this.columnArr[
+              this.columnIndex
+            ].totalWord;
+            this.getBookColumnAllWords();
+            this.previewIndex = 0;
+            this.preview();
+          }
+        } else {
+          this.learnWordInfo = this.quickPreviewArr[this.previewIndex];
+          this.preview();
+        }
+      }
+    },
+    //   点击脑波
+    getAudio() {
+      this.brainWaveShow = true;
+    },
+    //   点击tab
+    clickTab(e) {
+      let wordIndex = parseFloat(e.index) - 1;
+      this.btnData.answerShow = false;
+      this.btnData.answerBtnShow = true;
+      this.btnData.successaAnswerShow = false;
+      this.btnData.wrongBtnShow = false;
+      this.btnData.nextBtnShow = false;
+      this.btnData.successaAnswerShow = false;
+      if (wordIndex === -1) {
+        this.learnWordInfo = this.learnArr[this.learnIndex];
+        this.currentTrackList = "N";
+      } else {
+        this.learnWordInfo = this.trackList[wordIndex];
+        this.currentTrackList = "Y";
+      }
+      if (this.learnType === "LISTEN") {
+        this.btnData.listen1Show = false;
+        this.btnData.listenShow = true;
+      }
+      if (this.learnWordInfo.colors === "undefined") {
+        this.colorWord = "color7";
+      } else {
+        this.colorWord = this.learnWordInfo.colors;
+      }
+    },
+    //   点击单词列表
+    getWordList() {
+      this.wordListShow = true;
+    },
+    //   点击确定要进行章节测试
+    test() {
+      this.examShow = true;
+      let examType;
+      if (this.promptContents === "learnOver") {
+        if (this.learnType === "SPELL") {
+          examType = "COLUMN_WORD_SPELL_AFTER";
+        } else {
+          examType = "COLUMN_WORD_AFTER";
+        }
+      }
+      if (this.promptContents === "chapterTest") {
+        if (this.learnType === "SPELL") {
+          examType = "COLUMN_WORD_SPELL_BEFORE";
+        } else {
+          examType = "COLUMN_WORD_BEFORE";
+        }
+      }
+      this.examData = {
+        examType: examType,
+        bookNo: this.bookNo,
+        columnNo: this.columnNo,
+        columnTitle: this.Dialogtitles,
+        learnType: this.learnType
+      };
+      this.siderData.dialogShow = false;
+    },
+    // 清空学习记录
+    clearLearn() {
+      this.loadingShow = true;
+      dataService.clearLearn(this.bookNo, this.columnNo).then(
+        res => {
+          this.loadingShow = false;
+          let result = res.data;
+          let code = result.code;
+          let msg = result.msg;
+          this.loadingShow = false;
+          if (code === 200) {
+            this.siderData.dialogShow = false;
+            this.continueLearn();
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    // 点击不认识错误
+    clickWrong() {
+      // 隐藏错误和正确按钮
+      this.btnData.nextBtnShow = true;
+      this.btnData.successaAnswerShow = false;
+      this.btnData.wrongBtnShow = false;
+      this.wrongNums++;
+      this.$nextTick(() => {
+        let WordErr = this.$refs.WordErr;
+        WordErr.play();
+      });
+      // 不认识的单词计时
+      this.t2 =
+        new Date() - this.clickAnswerTime > 15000
+          ? 15000
+          : new Date() - this.clickAnswerTime;
+      this.colors = "color1";
+      this.playAudio();
+      let wordNo = this.learnWordInfo.wordNo;
+      let createTime = this.formatDateTime(new Date(), "ni");
+      // o为在正确数组中找到当前单词
+      let o = 0;
+      let wrongArr;
+      if (this.currentType === "learn") {
+        //   如果当前已经插入正确词表，将其删除
+        let correctArr = this.learnJsonData.columns[0].learns;
+        o = 0;
+        for (let c = 0; c < correctArr.length; c++) {
+          if (wordNo === correctArr[c].wordNo) {
+            correctArr.splice(c, 1);
+            this.colors = "color1";
+            o = 1;
+          }
+        }
+        wrongArr = this.learnJsonData.columns[0].wordNotes;
+        let w = wrongArr.find(item => {
+          return item.wordNo === wordNo;
+        });
+        // 如果当前单词在正确词表   将正确词数减一生词数加一   如果已经在错误词表的话  就不进行生词量的加
+        if (o !== 0) {
+          this.siderData.newWord++;
+          this.siderData.sumNewword++;
+          this.siderData.learnWord--;
+          this.siderData.sumPlan--;
+          this.catalogListArr.totalLearn = this.siderData.learnWord;
+          this.catalogListArr.totalWordNote = this.siderData.newWord;
+        } else {
+          if (!w) {
+            this.siderData.newWord++;
+            this.siderData.sumNewword++;
+            this.catalogListArr.totalWordNote = this.siderData.newWord;
+          }
+        }
+      } else {
+        //  如果当前为复习根据他的复习次数生成不同的数组
+        let columns = this.learnJsonData.columns;
+        let columnNo = this.learnWordInfo.columnNo;
+        let l = columns.length;
+        wrongArr = [];
+        // 找到当前单词所属于的栏目
+        for (let a = 0; a < l; a++) {
+          if (columnNo === columns[a].columnNo) {
+            wrongArr = columns[a].wordNotes;
+          }
+        }
+        // 如果当前单词已经在当前栏目的错误词表
+        let wordNotesWord = wrongArr.find(item => {
+          return item.wordNo === wordNo;
+        });
+        // 如果当前单词已经点错过一次
+        let wrongWord = this.worngWordData.find(item => {
+          return item.wordNo === wordNo;
+        });
+        // 复习时当前单词在错误词表且没有点错过时   复习进度加一
+        if (wordNotesWord && !wrongWord) {
+          this.siderData.columnreviewLearn--;
+        }
+      }
+      let j = 0;
+      //   学习的时间
+      let totalTime = this.t1 + this.t2;
+      let timeIndex;
+      //   当前单词所在栏目的错误词表中的数组
+      if (wrongArr.length === 0) {
+        //   如果数组为空
+        if (this.currentType === "learn") {
+          //  当前如果为学习的话
+          let wordObject = {
+            wordNo: wordNo,
+            createTime: this.formatDateTime(new Date(), "ni"),
+            status: this.learnWordInfo.status,
+            reviewNum: 0
+          };
+          this.learnJsonData.columns[0].wordNotes.push(wordObject);
+        } else {
+          this.getReviewNum(this.learnWordInfo);
+        }
+        this.worngWordData.push({ wordNo: wordNo, time: totalTime });
+        this.learnSecondsTime += totalTime;
+      } else {
+        let wordObject = {};
+        for (let i = this.worngWordData.length - 1; i >= 0; i--) {
+          if (wordNo === this.worngWordData[i].wordNo) {
+            j++;
+          }
+        }
+        if (j === 0) {
+          this.worngWordData.push({ wordNo: wordNo, time: totalTime });
+          if (this.currentType === "review") {
+            this.getReviewNum(this.learnWordInfo);
+          } else {
+            wordObject = {
+              wordNo: wordNo,
+              createTime: createTime,
+              status: this.learnWordInfo.status,
+              reviewNum: 0
+            };
+            this.learnJsonData.columns[0].wordNotes.push(wordObject);
+            this.learnSecondsTime += totalTime;
+          }
+        }
+        if (j === 1) {
+          if (this.currentType === "learn") {
+            for (let i = this.worngWordData.length - 1; i >= 0; i--) {
+              if (wordNo === this.worngWordData[i].wordNo) {
+                timeIndex = i;
+              }
+            }
+            let wrongTime = this.worngWordData[timeIndex].time + totalTime;
+            this.$set(this.worngWordData[timeIndex], "time", wrongTime);
+            this.learnSecondsTime += wrongTime;
+          }
+        }
+      }
+      if (this.currentTrackList === "Y") {
+        this.addTrackList(0);
+        this.trackListValue = parseFloat(this.trackListValue) + 1 + "";
+        if (this.learnType === "LISTEN") {
+          this.btnData.listenShow = true;
+        }
+      } else {
+        this.wordState = "wordWrong";
+        this.addTrackList(0);
+      }
+      let indexs = 0;
+      let learnL = this.learnArr.length - 1;
+      for (let i = 0; i < learnL; i++) {
+        if (this.learnArr[i].wordNo === this.learnWordInfo.wordNo) {
+          indexs = i;
+        }
+      }
+      if (indexs > this.learnIndex) {
+        if (this.wordState === "wordWrong" || this.wordState === "wordRight") {
+          this.learnArr.splice(indexs, 1);
+        }
+      }
+      this.addLearnArr(1, 0);
+    },
+    // 点击下一个
+    getNextWord() {
+      this.btnData.answerBtnShow = true;
+      this.btnData.nextBtnShow = false;
+      this.btnData.answerShow = false;
+      this.t3 =
+        new Date() - this.clickErrTime > 15000
+          ? 15000
+          : new Date() - this.clickErrTime;
+      this.learnSeconds += this.t3;
+      if (this.currentTrackList === "Y") {
+        this.currentTrackList = "N";
+        if (this.wordState === "wordWrong" || this.wordState === "wordRight") {
+          this.learnIndex++;
+          this.learnWordInfo = this.learnArr[this.learnIndex];
+        } else {
+          this.learnWordInfo = this.learnArr[this.learnIndex];
+        }
+        this.trackListValue = "-1";
+      } else {
+        this.learnIndex++;
+        this.learnWordInfo = this.learnArr[this.learnIndex];
+      }
+      if (this.learnType === "LISTEN") {
+        this.btnData.listen1Show = false;
+        this.btnData.listenShow = true;
+      }
+      this.imgShow = false;
+      this.leranWordStartTime = new Date();
+      this.colorWord = this.learnWordInfo.colors;
+      if (this.bookType === "ENGLISH_WORD") {
+        if (this.learnType !== "SPELL") {
+          this.playAudio();
+        }
+      }
+    },
+    //   答对啦
+    correct() {
+      // 用户答对啦之后,切换到下一个单词
+      if (this.learnType === "SPELL") {
+        this.btnData.answerShow = true;
+        this.btnData.spllingNextBtnShow = true;
+      } else {
+        this.btnData.successaAnswerShow = false;
+        this.btnData.wrongBtnShow = false;
+        this.btnData.answerBtnShow = true;
+        this.btnData.answerShow = false;
+      }
+      this.rightNums++;
+      let WordCorrect = this.$refs.WordCorrect;
+      WordCorrect.play();
+      let wordNo = this.learnWordInfo.wordNo;
+      // 如果用户点击tab 然后点击正确
+      if (this.currentTrackList === "Y") {
+        this.trackListValue = "-1";
+        if (this.learnType === "LISTEN") {
+          this.btnData.listenShow = true;
+        }
+        this.addTrackList(0);
+        if (this.wordState === "wordWrong" || this.wordState === "wordRight") {
+          this.learnIndex++;
+          this.learnWordInfo = this.learnArr[this.learnIndex];
+        } else {
+          this.learnWordInfo = this.learnArr[this.learnIndex];
+        }
+        this.colorWord = this.learnWordInfo.colors;
+        this.currentTrackList = "N";
+        if (this.learnType === "LISTEN") {
+          this.btnData.listenShow = true;
+          this.btnData.listen1Show = false;
+        }
+      } else {
+        //   根据顺序点击正确
+        this.wordState = "wordRight";
+        let wordTime;
+        let status = this.learnWordInfo.status;
+        this.t2 = new Date() - this.clickAnswerTime;
+        if (this.t2 > 15000) {
+          this.t2 = 15000;
+        }
+        let nArr = [];
+        let rightCount = 0;
+        // 当前单词的colors如果为undefined的话，代码为首次点击
+        if (this.learnWordInfo.colors === undefined) {
+          this.colors = "color7";
+          this.colorWord = "color7";
+          if (this.currentType === "review") {
+            this.siderData.columnreviewLearn++;
+          } else {
+            this.siderData.learnWord++;
+            this.siderData.sumPlan++;
+            this.catalogListArr.totalLearn = this.siderData.learnWord;
+          }
+          let learnSecondsTime = this.t1 + this.t2;
+          this.learnSeconds += learnSecondsTime;
+          let learnTime = this.formatDateTime(new Date(), "ni");
+          if (this.currentType === "learn") {
+            let wordObject = {
+              wordNo: wordNo,
+              status: this.learnWordInfo.status,
+              learnedTime: learnTime,
+              learnedSeconds: learnSecondsTime
+            };
+            this.learnJsonData.columns[0].learns.push(wordObject);
+          } else {
+            //   如果当前单词的复习次数为零的话   更新到正确词表中
+            if (this.learnWordInfo.reviewNum === 0) {
+              let learnWordObject = {
+                wordNo: wordNo,
+                status: status,
+                learnedTime: learnTime,
+                learnedSeconds: learnSecondsTime
+              };
+              let jsonColumns = this.learnJsonData.columns;
+              let z = this.learnJsonData.columns.length;
+              for (let c = 0; c < z; c++) {
+                if (this.learnWordInfo.columnNo === jsonColumns[c].columnNo) {
+                  jsonColumns[c].learns.push(learnWordObject);
+                }
+              }
+            }
+            // 同时更新错误词表
+            this.getReviewNum(this.learnWordInfo);
+          }
+        } else {
+          // 第二次点击
+          if (this.worngWordData.length > 0) {
+            for (let i = 0; i < this.trackList.length; i++) {
+              let trackWordNo = this.trackList[i].wordNo;
+              if (wordNo === trackWordNo) {
+                nArr.push(this.trackList[i].rightCount);
+              }
+            }
+          }
+          let n = nArr[0];
+          let clickRightNum;
+          if (this.learnType === "SPELL") {
+            clickRightNum = 2;
+          } else {
+            clickRightNum = 5;
+          }
+          rightCount = n + 1;
+          if (n < clickRightNum) {
+            this.colors = "color" + (n + 2);
+            n = this.trackListPosition[n];
+            this.addLearnArr(n, rightCount);
+            let l = this.worngWordData.length;
+            for (let i = 0; i < l; i++) {
+              if (this.learnWordInfo.wordNo === this.worngWordData[i].wordNo) {
+                wordTime = this.worngWordData[i].time + this.t1 + this.t2;
+                this.$set(this.worngWordData[i], "time", wordTime);
+              }
+            }
+          } else {
+            let l = this.worngWordData.length;
+            let learnTime = this.formatDateTime(new Date());
+            for (let i = 0; i < l; i++) {
+              if (wordNo === this.worngWordData[i].wordNo) {
+                wordTime = this.worngWordData[i].time + this.t1 + this.t2;
+                this.learnSeconds += wordTime;
+                if (this.currentType === "learn") {
+                  let wordObject = {
+                    wordNo: wordNo,
+                    status: status,
+                    learnedTime: learnTime,
+                    learnedSeconds: wordTime
+                  };
+                  this.learnJsonData.columns[0].learns.push(wordObject);
+                  let wrongNotes = this.learnJsonData.columns[0].wordNotes;
+                  let wordNotes = wrongNotes.find(item => {
+                    return item.wordNo === wordNo;
+                  });
+                  this.$set(wordNotes, "reviewNum", 1);
+                } else {
+                  if (this.learnWordInfo.reviewNum === 0) {
+                    let learnWordObject = {
+                      wordNo: wordNo,
+                      status: status,
+                      learnedTime: learnTime,
+                      learnedSeconds: wordTime
+                    };
+                    let jsonColumns = this.learnJsonData.columns;
+                    let z = this.learnJsonData.columns.length;
+                    for (let c = 0; c < z; c++) {
+                      if (
+                        this.learnWordInfo.columnNo === jsonColumns[c].columnNo
+                      ) {
+                        jsonColumns[c].learns.push(learnWordObject);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            if (this.currentType === "review") {
+              this.siderData.columnreviewLearn++;
+            } else {
+              this.siderData.learnWord++;
+              this.siderData.sumPlan++;
+              this.catalogListArr.totalLearn = this.siderData.learnWord;
+            }
+          }
+        }
+        this.addTrackList(rightCount);
+        // 如果nArr数组为
+        if (this.learnIndex === this.learnArr.length - 1) {
+          //   学习和复习完毕
+          this.colorWord = "color7";
+          if (this.currentType === "review") {
+            // 如果为复习的话删除records对象
+            this.$delete(this.learnJsonData.columns[0], "records");
+            this.siderData.columnNeedReview = "N";
+          } else {
+            // 如果为学习  将数据补充完整
+            let columns = this.learnJsonData.columns[0];
+            columns.records.time = this.formatDateTime(new Date(), "YMD");
+            columns.records.rightNum = columns.learns.length;
+            columns.records.wrongNum = columns.wordNotes.length;
+            columns.records.learnTimes = this.rightNums + this.wrongNums;
+            columns.records.learnSeconds = this.learnSeconds;
+            columns.rightNum =
+              this.siderData.learnWord > this.siderData.totalWord
+                ? this.siderData.totalWord
+                : this.siderData.learnWord;
+            columns.wrongNum = this.siderData.newWord;
+            columns.updateTime = this.formatDateTime(new Date(), "YM");
+            this.siderData.dialogShow = true;
+            if (this.bookType === "ENGLISH_WORD") {
+              this.promptContents = "learnOver";
+            } else {
+              this.promptContents = "learnOverHan";
+            }
+          }
+          // 提交数据
+          this.learnDataBase = Base64.stringify(
+            Utf8.parse(JSON.stringify(this.learnJsonData))
+          );
+          this.addLearnWords();
+        } else {
+          if (this.learnType === "SPELL") {
+            // this.siderData.nextBtnShow = true;
+          } else {
+            this.learnIndex += 1;
+            this.learnWordInfo = this.learnArr[this.learnIndex];
+            this.btnData.listenShow = true;
+            this.wordState = "default";
+            if (this.learnWordInfo.colors === undefined) {
+              this.colorWord = "color7";
+            } else {
+              this.colorWord = this.learnWordInfo.colors;
+            }
+            if (this.learnType === "LISTEN") {
+              this.btnData.listenShow = true;
+              this.btnData.listen1Show = false;
+            }
+            this.imgShow = false;
+            this.leranWordStartTime = new Date();
+            if (this.bookType === "ENGLISH_WORD") {
+              if (this.learnType !== "SPELL") {
+                this.playAudio();
+              }
+            }
+          }
+        }
+      }
+    },
+    // 向learnArr数组添加对象
+    addLearnArr(n, rightCount) {
+      let learnObject = {};
+      for (let key in this.learnWordInfo) {
+        this.$set(learnObject, key, this.learnWordInfo[key]);
+      }
+      this.$set(learnObject, "colors", this.colors);
+      this.$set(learnObject, "rightCount", rightCount);
+      if (this.wordState === "default") {
+        this.learnArr.splice(this.learnIndex + n, 0, learnObject);
+      } else {
+        this.learnArr.splice(this.learnIndex + n + 1, 0, learnObject);
+      }
+    },
+    // 向trackList数组添加属性
+    addTrackList(rightCount) {
+      let learnObject = {};
+      for (let key in this.learnWordInfo) {
+        this.$set(learnObject, key, this.learnWordInfo[key]);
+      }
+      this.$set(learnObject, "colors", this.colorWord);
+      this.$set(learnObject, "rightCount", rightCount);
+      this.trackList.unshift(learnObject);
+      this.clickNum = 0;
+      if (this.trackList.length > 20) {
+        this.trackList.splice(21, 1);
+        this.clickNum++;
+      }
+    },
+    formatDateTime(time, type) {
+      let year = time.getFullYear();
+      let month =
+        time.getMonth() + 1 < 10
+          ? "0" + (time.getMonth() + 1)
+          : time.getMonth() + 1;
+      let date = time.getDate() < 10 ? "0" + time.getDate() : time.getDate();
+      let h = time.getHours() < 10 ? "0" + time.getHours() : time.getHours();
+      let m =
+        time.getMinutes() < 10 ? "0" + time.getMinutes() : time.getMinutes();
+      let s =
+        time.getSeconds() < 10 ? "0" + time.getSeconds() : time.getSeconds();
+      let times = "";
+      if (type === "YMD") {
+        times = year + month + date;
+      } else {
+        times = year + month + date + h + m + s;
+      }
+      return times;
+    },
+    //   点击答案按钮，获取答案
+    getAnswer() {
+      this.btnData.successaAnswerShow = true;
+      this.btnData.wrongBtnShow = true;
+      this.btnData.answerBtnShow = false;
+      this.btnData.answerShow = true;
+      this.btnData.learnTypeShow = true;
+      this.btnData.listenShow = false;
+      this.btnData.listen1Show = false;
+      this.imgShow = true;
+      if (this.learnType === "DEFAULT") {
+        this.$nextTick(() => {
+          let answer = this.$refs.WordAnswer;
+          answer.play();
+        });
+      } else {
+        this.playAudio();
+      }
+      if (this.bookType !== "ENGLISH_WORD") {
+        setTimeout(() => {
+          this.playAudio();
+        }, 300);
+      }
+      this.clickErrTime = new Date();
+      this.t1 =
+        new Date() - this.leranWordStartTime > 15000
+          ? 15000
+          : new Date() - this.leranWordStartTime;
+      this.clickAnswerTime = new Date();
+      let learnObject = {};
+      let createTime;
+      // 初始化学习的数据
+      if (this.currentType === "learn") {
+        createTime = this.learnJsonData.columns[0].createTime;
+        this.learnJsonData.columns[0].status = this.status;
+        if (createTime === "") {
+          createTime = this.formatDateTime(new Date(), "ni");
+          this.learnJsonData.columns[0].createTime = createTime;
+          this.learnJsonData.columns[0].records.createTime = createTime;
+        }
+      } else {
+        let columnNo = this.learnWordInfo.columnNo;
+        let columns = this.learnJsonData.columns;
+        let h = this.learnJsonData.columns.length;
+        let learnNum = 0;
+        let wrongNum = 0;
+        this.columnArr.forEach((item, index) => {
+          if (columnNo === item.columnNo) {
+            learnNum =
+              item.totalLearn > item.totalWord
+                ? item.totalWord
+                : item.totalLearn;
+            wrongNum = item.totalWordNote;
+          }
+        });
+        if (this.learnJsonData.columns[0].columnNo === " ") {
+          this.learnJsonData.columns[0].columnNo = this.learnWordInfo.columnNo;
+          this.learnJsonData.columns[0].status = this.learnWordInfo.status;
+          this.learnJsonData.columns[0].createTime = this.formatDateTime(
+            new Date(),
+            "YM"
+          );
+          columns[0].rightNum = learnNum;
+          columns[0].wrongNum = wrongNum;
+        } else {
+          createTime = this.formatDateTime(new Date(), "ni");
+          let columnI = 0;
+          for (let i = 0; i < h; i++) {
+            if (columnNo === columns[i].columnNo) {
+              columnI++;
+            }
+          }
+          if (columnI === 0) {
+            learnObject = {
+              columnNo: columnNo,
+              rightNum: learnNum,
+              wrongNum: wrongNum,
+              status: this.learnWordInfo.status,
+              createTime: createTime,
+              updateTime: "",
+              learns: [],
+              wordNotes: []
+            };
+            this.learnJsonData.columns.push(learnObject);
+          }
+        }
+      }
+      console.log(this.learnJsonData);
+    },
+    // 根据复习的次数，构建不同的对象
+    getReviewNum(wordInfo) {
+      let createTimes;
+      let currentTimes = this.formatDateTime(new Date(), "ni");
+      let columnNo = wordInfo.columnNo;
+      createTimes = this.formatDateTime(new Date(wordInfo.createTime), "Y");
+      let num = wordInfo.reviewNum;
+      let wordNos = wordInfo.wordNo;
+      let wordObject = {
+        wordNo: wordNos,
+        status: wordInfo.status,
+        createTime: createTimes
+      };
+      let reviewOneTimes = this.formatDateTime(
+        new Date(wordInfo.reviewOneTime),
+        "ni"
+      );
+      let reviewTwoTimes = this.formatDateTime(
+        new Date(wordInfo.reviewTwoTime),
+        "ni"
+      );
+      let reviewThreeTimes = this.formatDateTime(
+        new Date(wordInfo.reviewThreeTime),
+        "ni"
+      );
+      let reviewFourTimes = this.formatDateTime(
+        new Date(wordInfo.reviewFourTime),
+        "ni"
+      );
+      if (num === 0) {
+        this.$set(wordObject, "reviewNum", 1);
+        this.$set(wordObject, "reviewOneTime", currentTimes);
+      } else if (num === 1) {
+        this.$set(wordObject, "reviewNum", 2);
+        this.$set(wordObject, "reviewOneTime", reviewOneTimes);
+        this.$set(wordObject, "reviewTwoTime", currentTimes);
+      } else if (num === 2) {
+        this.$set(wordObject, "reviewNum", 3);
+        this.$set(wordObject, "reviewOneTime", reviewOneTimes);
+        this.$set(wordObject, "reviewTwoTime", reviewTwoTimes);
+        this.$set(wordObject, "reviewThreeTime", currentTimes);
+      } else if (num === 3) {
+        this.$set(wordObject, "reviewNum", 4);
+        this.$set(wordObject, "reviewOneTime", reviewOneTimes);
+        this.$set(wordObject, "reviewTwoTime", reviewTwoTimes);
+        this.$set(wordObject, "reviewThreeTime", reviewThreeTimes);
+        this.$set(wordObject, "reviewFourTime", currentTimes);
+      } else if (num === 4) {
+        this.$set(wordObject, "reviewNum", 5);
+        this.$set(wordObject, "reviewOneTime", reviewOneTimes);
+        this.$set(wordObject, "reviewTwoTime", reviewTwoTimes);
+        this.$set(wordObject, "reviewThreeTime", reviewThreeTimes);
+        this.$set(wordObject, "reviewFourTime", reviewFourTimes);
+        this.$set(wordObject, "reviewFiveTime", currentTimes);
+      }
+      let jsonColumns = this.learnJsonData.columns;
+      let z = this.learnJsonData.columns.length;
+      for (let c = 0; c < z; c++) {
+        if (columnNo === jsonColumns[c].columnNo) {
+          jsonColumns[c].wordNotes.push(wordObject);
+          jsonColumns[c].updateTime = this.formatDateTime(new Date(), "ni");
+        }
+      }
+    },
+    // 本栏目需要学习的单词
+    getBookColumnLearnWords() {
+      this.learnArr = [];
+      this.loadingShow = true;
+      dataService
+        .getBookColumnLearnWords(0, 10, this.learnType, this.columnNo)
+        .then(
+          res => {
+            let result = res.data;
+            let code = result.code;
+            let data = result.data;
+            let msg = result.msg;
+            this.loadingShow = false;
+            if (code === 200) {
+              this.totalWordList = data;
+              if (this.totalWordList.length === 0) {
+                let nextItem = this.columnArr.find(item => {
+                  return (
+                    item.columnNo !== this.columnNo &&
+                    item.totalWord > item.totalLearn
+                  );
+                });
+                if (nextItem) {
+                  this.columnNo = nextItem.columnNo;
+                  this.columnNoIndexs = this.columnNo;
+                  this.getBookColumnLearnWords();
+                  this.getBookColumnAllWords();
+                } else {
+                  this.$message("当天课程已学完，请明天再来！");
+                  this.$router.replace({ name: "learnCenter" });
+                }
+              } else {
+                this.learnArr = this.totalWordList;
+                this.learnIndex = 0;
+                this.btnData.listenShow = true;
+                this.learnWordInfo = this.learnArr[this.learnIndex];
+                if (this.bookType === "ENGLISH_WORD") {
+                  if (this.learnType !== "SPELL") {
+                    this.playAudio();
+                  }
+                }
+                if (this.learnType === "LISTEN") {
+                  this.btnData.listen1Show = false;
+                  this.btnData.listenShow = true;
+                }
+                this.wordState = "default";
+                this.colorWord = "color7";
+                this.learnJsonData.columns[0].columnNo = this.columnNo;
+                this.leranWordStartTime = new Date();
+                this.imgShow = false;
+                this.wordListDialogShow = true;
+                this.btnData.answerShow = false;
+                this.btnData.answerBtnShow = true;
+                this.btnData.successaAnswerShow = false;
+                this.btnData.wrongBtnShow = false;
+                this.btnData.nextBtnShow = false;
+                let columns = this.learnJsonData.columns[0];
+                columns.records.time = this.formatDateTime(new Date(), "YMD");
+                columns.records.rightNum = columns.learns.length;
+                columns.records.wrongNum = columns.wordNotes.length;
+                columns.records.learnTimes = this.rightNums + this.wrongNums;
+                columns.records.learnSeconds = this.learnSeconds;
+                columns.rightNum = this.siderData.learnWord;
+                columns.wrongNum = this.siderData.newWord;
+                columns.updateTime = this.formatDateTime(new Date(), "YM");
+              }
+            } else if (code === 500) {
+              this.$refs.sidebar.getplay();
+              this.$message.error(msg);
+            } else if (code === 600) {
+              this.$message.error("VIP已过期,请尽快充值");
+              this.$router.replace({ name: "learnCenter" });
+            }
+          },
+          () => {
+            this.loadingShow = false;
+            this.$message.error("请求错误");
+          }
+        );
+    },
+    // 本栏目全部单词
+    getBookColumnAllWords() {
+      this.loadingShow = true;
+      dataService.columnAllWords(this.columnNo).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          this.loadingShow = false;
+          if (code === 200) {
+            if (this.currentType === "preview") {
+              this.previewIndex = 0;
+              this.quickPreviewArr = data;
+              this.learnWordInfo = this.quickPreviewArr[this.previewIndex];
+              this.siderData.learnWord = this.previewIndex;
+            }
+            this.wordListDatas = [];
+            data.forEach((item, index) => {
+              this.wordListDatas.push(item);
+            });
+          } else if (code === 500) {
+            this.$refs.sidebar.getplay();
+            this.$message.error(msg);
+          }
+        },
+        () => {
+          this.loadingShow = false;
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    // 新增栏目学会的单词
+    addLearnWords() {
+      dataService.syncAdd(this.learnDataBase, this.syncType).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          if (code === 200) {
+            this.trackList = [];
+            this.rightNums = 0;
+            this.wrongNums = 0;
+            this.worngWordData = [];
+            this.learnJsonData = {
+              studentNo: this.bookInfo.studentNo,
+              bookNo: this.bookNo,
+              learnType: this.learnType,
+              columns: [
+                {
+                  columnNo: "",
+                  rightNum: 0,
+                  wrongNum: 0,
+                  status: "",
+                  createTime: "",
+                  updateTime: "",
+                  learns: [],
+                  wordNotes: [],
+                  records: {
+                    time: "",
+                    rightNum: 0,
+                    wrongNum: 0,
+                    learnTimes: 0,
+                    learnSeconds: "",
+                    createTime: ""
+                  }
+                }
+              ]
+            };
+            if (this.currentType === "review") {
+              this.currentType = "learn";
+              this.learnIndex = 0;
+              this.$refs.sidebar.getBookColumn();
+            }
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    getBookReviewWords() {
+      this.loadingShow = true;
+      dataService.getBookReviewWords(0, 20, this.learnType, this.bookNo).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          this.loadingShow = false;
+          this.reviewNumData += 1;
+          if (code === 200) {
+            if (data.content.length > 0) {
+              this.siderData.columnNeedReview = "Y";
+              this.columnNoIndexs = " ";
+              this.currentType = "review";
+              this.wordListDialogShow = false;
+              this.learnArr = data.content;
+              this.learnWordInfo = this.learnArr[this.learnIndex];
+              if (this.learnType === "LISTEN") {
+                this.btnData.listen1Show = false;
+                this.btnData.listenShow = true;
+              }
+              console.log(this.learnJsonData);
+              if (this.bookType === "ENGLISH_WORD") {
+                if (this.learnType !== "SPELL") {
+                  this.playAudio();
+                }
+              }
+            } else {
+              this.siderData.columnNeedReview = "N";
+              this.currentType = "learn";
+              this.getBookColumnLearnWords();
+              this.getBookColumnAllWords();
+              this.wordListDialogShow = true;
+              //   this.dialogShow = true;
+            }
+          } else if (code === 600) {
+            this.$message.error("VIP已过期,请尽快充值");
+            this.$router.replace({ name: "learnCenter" });
+          }
+        },
+        () => {
+          this.loadingShow = false;
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    onBrainPlay(playing) {
+      this.brainPlay = playing;
+    }
+  }
+};
+</script>
+<style lang="scss">
+.learnIndex {
+  background-color: #efeff4;
+  height: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  .el-loading-spinner {
+    i {
+      color: #fff;
+      font-size: 60px;
+    }
+  }
+  .el-dialog {
+    margin-top: 37vh !important;
+    min-width: 500px;
+    border-radius: 10px;
+    .el-dialog__header {
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      background-color: #56bdff;
+      .el-dialog__title {
+        color: #fff;
+        font-size: 20px;
+      }
+    }
+    .el-dialog__body {
+      text-align: center;
+    }
+    .el-dialog__footer {
+      .el-button {
+        padding: 10px 50px;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0px 2px 5px #bababa;
+        -moz-box-shadow: 0px 2px 5px #bababa;
+      }
+      .el-button--primary {
+        background-color: #56bdff;
+      }
+      .el-button--default {
+        background-color: #f4f4f4;
+      }
+    }
+  }
+  .learnMain {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0px;
+    min-width: 1000px;
+    color: #7d8287;
+    background-color: #e5e5e5;
+    .asideRight {
+      position: absolute;
+      top: 120px;
+      right: 5px;
+      bottom: 50px;
+      width: 80px;
+      text-align: center;
+      .iconDiv {
+        i {
+          display: block;
+          font-size: 40px;
+          width: 100%;
+          background-color: #f4f4f4;
+          height: 125px;
+          line-height: 125px;
+          cursor: pointer;
+          &:active {
+            background: #eee;
+          }
+        }
+        .brainWave {
+          margin-top: 20px;
+          img {
+            width: 50px;
+          }
+        }
+      }
+    }
+    .elTabs {
+      background-color: #868686;
+      position: absolute;
+      padding: 54px 0px 40px 0px;
+      width: 100%;
+      height: 0px;
+      overflow-y: hidden;
+      z-index: 19;
+      .elTabs::-webkit-scrollbar {
+        width: 0px;
+      }
+      .elTabs::-webkit-scrollbar-thumb {
+        background-color: #c2c2c2;
+      }
+      .el-tabs__header {
+        padding-left: 250px;
+        margin: 0px;
+        margin-top: 13px;
+        border-bottom: 0;
+        .el-tabs__nav {
+          border: none;
+          .el-tabs__item {
+            color: #fff;
+            height: 30px;
+            line-height: 30px;
+            border-left: none;
+            border-radius: 5px 5px 0px 0px;
+          }
+          .is-active {
+            background-color: #fff;
+            color: #57bdff;
+          }
+        }
+      }
+    }
+    .main {
+      padding: 116px 100px 30px 270px;
+      .mainDiv::-webkit-scrollbar {
+        width: 0px;
+      }
+      .mainDiv::-webkit-scrollbar-thumb {
+        background-color: #c2c2c2;
+      }
+      .mainDiv {
+        width: 100%;
+        overflow-y: auto;
+        height: 100%;
+        .wordDiv {
+          &:active {
+            background-color: rgb(245, 245, 245);
+          }
+          cursor: pointer;
+          background-color: #fff;
+          border-radius: 25px;
+          padding: 10px 20px;
+          height: 200px;
+          position: relative;
+          margin-bottom: 13px;
+          .wordLeft {
+            display: inline-block;
+            width: 70%;
+            height: 100%;
+            .mainWord {
+              font-size: 50px;
+              color: #ff0000;
+              font-weight: normal;
+            }
+            .color1 {
+              color: #946e02;
+            }
+            .color2 {
+              color: #008b2d;
+            }
+            .color3 {
+              color: #0076aa;
+            }
+            .color4 {
+              color: #660066;
+            }
+            .color5 {
+              color: #081189;
+            }
+            .color6 {
+              color: #000000;
+            }
+            .color7 {
+              color: #ff0000;
+            }
+
+            .mainP {
+              line-height: 30px;
+              color: #868686;
+              font-size: 16px;
+              font-weight: normal;
+            }
+          }
+          .wordRight {
+            display: inline-block;
+            width: 200px;
+            height: 100%;
+            position: absolute;
+            top: 20px;
+            right: 0px;
+            img {
+              vertical-align: middle;
+              width: 180px;
+              height: 180px;
+              border-radius: 20px;
+            }
+          }
+        }
+        .answerBtn {
+          width: 100%;
+          position: relative;
+          height: 60px;
+          text-align: right;
+          .el-button {
+            padding: 10px 30px;
+            font-size: 24px;
+            border-radius: 12px;
+            .el-icon-back {
+              transform: rotate(180deg);
+              font-weight: bold;
+            }
+          }
+          .el-button--success {
+            background-color: #0ee573;
+            border-color: #0ee573;
+          }
+          .el-button--success:focus,
+          .el-button--success:hover {
+            background-color: #0ee573;
+            border-color: #0ee573;
+          }
+        }
+        .answerMain {
+          min-height: 300px;
+          background-color: #fff;
+          border-radius: 25px;
+          padding: 20px 20px;
+          color: #7d7d7d;
+          font-size: 16px;
+          .listenDiv {
+            border-bottom: 1px solid #d3d3d3;
+            .listen {
+              line-height: 35px;
+            }
+          }
+          .borderBotttom {
+            border-bottom: none;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

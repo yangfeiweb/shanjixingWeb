@@ -1,0 +1,26 @@
+<template>
+  <div>
+    <nav-header>
+      <span slot="title">测试成绩</span>
+    </nav-header>
+    <el-table :data="scoreList">
+    </el-table>
+  </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      scoreList: [{}]
+    };
+  },
+  mounted() {},
+  methods: {}
+};
+</script>

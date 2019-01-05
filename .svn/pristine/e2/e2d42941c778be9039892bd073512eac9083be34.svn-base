@@ -1,0 +1,441 @@
+<template>
+	<div class="wordTest clear"> 
+    <div class="header">
+      <nav-header>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">词汇测试</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="wordTest-container">
+      <div class="test-top">
+        <p class="test-lv">等级：综合测试
+          <span>(共{{dataList.length}}题)</span>
+        </p>
+        <!-- <p  class="test-count">题量：{{curr+1}}/{{wordList.length}}</p> -->
+        <el-progress v-if="!isOver" :percentage="progressMain" status="success"></el-progress>
+        <div class="test-res">
+          <p class="test-right">正确：{{rightN}}</p>
+          <p class="test-err">错误：{{errorN}}</p>
+        </div>
+        <el-button type="primary" class="test-again" v-if="isOver" @click="testAgain">重新测试</el-button>
+      </div>
+      <!-- 测试内容 -->
+      <div class="test-main" v-show="!isOver">
+        <div class="word-content">
+          <p class="test-word">{{currWord.word}}</p>
+          <el-progress class="progress" :percentage="progress" status="exception"></el-progress>
+          <!-- <p>{{Math.ceil(time)}} s</p> -->
+        </div>
+        <div class="content-container">
+          <transition-group name='fade'>
+            <!-- 汉字列表 -->
+            <ul class="word-list" v-for="(item, idx) in wordList" :key="idx" v-if="idx==curr">
+              <li class="item-container" v-for="(option,index) in item.options" :key="option.id" @click="check(option.chinese,index)">
+                <div class='word-item' :class="{'right-active':chooseIdx === index && !currError,'error-active':chooseIdx === index && currError,'right-active-two':rightIdx === index && currError,'right-active-three':rightIdx === index && currError2}">
+                  <a v-if="index == 0">A </a>
+                  <a v-if="index == 1">B </a>
+                  <a v-if="index == 2">C </a>
+                  <a v-if="index == 3">D </a>
+                  <p>
+                    {{option.pos+" "+option.chinese}}
+                  </p>
+                </div>
+                <img class="right" src="static/images/right.png"  alt="" v-show='chooseIdx === index && !currError'>
+                <img class="right" src="static/images/right.png"  alt="" v-show='rightIdx === index && currError'>
+                <img class="error" src="static/images/error.png" alt="" v-show='chooseIdx === index && currError'>
+              </li>
+            </ul>
+          </transition-group>
+        </div>
+      </div>
+      <!-- 测试结果 -->
+      <div class="test-score" v-show="isOver">
+        <p class="test-score-title">词汇量测试结果</p>
+        <img v-if="percent>=0.9" class="test-score-face" src="static/images/face_1.png" alt="">
+        <img v-if="percent>=0.8&&percent<0.9" class="test-score-face" src="static/images/face_2.png" alt="">
+        <img v-if="percent>=0.7&&percent<0.8" class="test-score-face" src="static/images/face_3.png" alt="">
+        <img v-if="percent<0.7" class="test-score-face" src="static/images/face_4.png" alt="">
+        <p class="test-score-N">您的单词正确数量为{{rightN}}个</p>
+        <p v-if="percent>=0.9" class="test-score-text">哇 太棒了 给你点个赞 要坚持下去</p>
+        <p v-if="percent>=0.8&&percent<0.9" class="test-score-text">您的词汇量还不错哦！再加把劲就满分啦！</p>
+        <p v-if="percent>=0.7&&percent<0.8" class="test-score-text">您的词汇量还有待提高，要加油喽！</p>
+        <p v-if="percent<0.7" class="test-score-text">您的词汇量是在太少了</p>
+      </div>
+      <el-button type="primary" class="pauseBtn" v-show="currError" @click="pause">{{btnText}}</el-button>
+    </div>
+	</div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import utility from "@/utility/utility";
+
+export default {
+  mounted() {
+    console.log(this.wordList[this.curr].options);
+    let newList = this.wordList[this.curr].options;
+    newList.forEach((e, index) => {
+      if (this.wordList[this.curr].chinese == e.chinese) {
+        this.rightIdx = index;
+      }
+    });
+    this.timer = setInterval(() => {
+      this.progress -= 0.1;
+      this.time -= 0.01;
+      if (this.time <= 0.01) {
+        this.time--;
+        this.currError = true;
+        clearInterval(this.timer);
+        // this.rightN += 0.25;
+        this.errorN += 1;
+        this.next();
+      }
+    }, 10);
+  },
+  computed: {
+    wordList: function() {
+      // let words = _.cloneDeep(this.$store.getters.currFlowStepWords || []);
+      let words = _.cloneDeep(this.dataList || []);
+      words.forEach(word => {
+        let randomWords = utility.sortArrByRandom(words);
+        word.options = [
+          {
+            id: word.id,
+            word: word.word,
+            pos: word.pos,
+            chinese: word.chinese
+          }
+        ];
+        for (let i = 0; i < randomWords.length; i++) {
+          let randomItem = randomWords[i];
+          if (randomItem.id !== word.id) {
+            word.options.push({
+              id: randomItem.id,
+              word: randomItem.word,
+              pos: randomItem.pos,
+              chinese: randomItem.chinese
+            });
+            if (word.options.length == 4) {
+              break;
+            }
+          }
+        }
+        word.options = utility.sortArrByRandom(word.options);
+      });
+      console.log("------words", words);
+      return words;
+    },
+    currWord: function() {
+      return this.wordList[this.curr];
+    }
+  },
+  data() {
+    return {
+      rightN: 0, //正确数量
+      errorN: 0, //错误数量
+      time: 10, //倒计时
+      progress: 100, //进度条
+      progressMain: 0, //测试总进度条
+      curr: 0,
+      chooseIdx: -1,
+      rightIdx: -1,
+      currError: false,
+      currError2: false,//标记 选错时 正确选项的样式
+      isOver: false, //是否显示测试结果
+      timer: null, //单词定时器
+      oneTimer: null, //选错之后的一次性定时器
+      nextTimer: null, //next中的一次性定时器
+      btnText: "暂停",
+      percent: 0, //正确率
+      dataList: [
+        { id: 1, word: "aaaaa", chinese: "啊啊啊啊啊", pos: "n" },
+        { id: 2, word: "bbbbb", chinese: "拜拜拜拜吧", pos: "v" },
+        { id: 3, word: "ccccc", chinese: "踩踩踩踩踩", pos: "adj" },
+        { id: 4, word: "xxxxx", chinese: "惺惺惜惺惺", pos: "v" },
+        { id: 5, word: "ddddd", chinese: "地地道道的", pos: "adj" },
+        { id: 6, word: "eeeee", chinese: "呃呃呃嗯嗯", pos: "n" },
+        { id: 7, word: "nnnnn", chinese: "你你你你你", pos: "v" },
+        { id: 8, word: "fffff", chinese: "发发发发发", pos: "n" },
+        { id: 9, word: "ggggg", chinese: "嘎嘎嘎嘎嘎", pos: "adj" },
+        { id: 10, word: "hhhhh", chinese: "哈哈哈哈哈", pos: "n" },
+        { id: 11, word: "mmmmm", chinese: "某某某某某", pos: "adj" },
+        { id: 12, word: "jjjjj", chinese: "京津冀经济", pos: "n" }
+      ]
+    };
+  },
+
+  methods: {
+    check: function(chinese, index) {
+      console.log("-------check");
+      //防止重复点击
+      if (this.chooseIdx !== -1) {
+        return;
+      }
+      //当所点击的正确时
+      if (this.currWord.chinese == chinese) {
+        console.log("-------选对");
+        this.chooseIdx = index;
+        this.rightN++;
+        if (this.timer) {
+          clearInterval(this.timer);
+        }
+        this.next();
+      } else {
+        console.log("-------选错");
+        this.chooseIdx = index;
+        this.currError = true;
+        this.currError2 = true;
+        this.errorN++;
+        if (this.timer) {
+          clearInterval(this.timer);
+        }
+        this.oneTimer = setTimeout(() => {
+          clearTimeout(this.oneTimer);
+          this.oneTimer = null;
+          this.next();
+        }, 3000);
+      }
+    },
+    next: function() {
+      this.nextTimer = setTimeout(() => {
+        this.time = 10;
+        this.progress = 100;
+        this.progressMain+=100/this.dataList.length;
+        this.chooseIdx = -1;
+        this.currError = false;
+        this.currError2 = false;
+        console.log("-------this.curr", this.curr);
+        console.log("-----------this.wordList.length", this.wordList.length);
+        if (this.curr + 1 >= this.wordList.length) {
+          this.percent = this.rightN / this.wordList.length;
+          console.log("-----------正确率", this.percent);
+          console.log("结束");
+          this.isOver = true;
+        } else {
+          this.curr++;
+          let newList = this.wordList[this.curr].options;
+          newList.forEach((e, index) => {
+            if (this.wordList[this.curr].chinese == e.chinese) {
+              this.rightIdx = index;
+            }
+          });
+          this.timer = setInterval(() => {
+            this.progress -= 0.1;
+            this.time -= 0.01;
+            if (this.time <= 0.01) {
+              this.time--;
+              this.currError = true;
+              clearInterval(this.timer);
+              // this.rightN += 0.25;
+              this.errorN += 1;
+              this.next();
+            }
+          }, 10);
+        }
+      }, 1000);
+    },
+    pause: function() {
+      if (this.btnText == "暂停") {
+        console.log("---------暂停");
+        this.btnText = "继续测试";
+        if (this.oneTimer) {
+          clearTimeout(this.oneTimer);
+        }
+        if (this.nextTimer) {
+          clearTimeout(this.nextTimer);
+        }
+      } else {
+        console.log("---------继续测试");
+        this.btnText = "暂停";
+        this.next();
+      }
+    },
+    testAgain: function() {
+      console.log("--------重新测试");
+      this.rightN = 0;
+      this.errorN = 0;
+      this.curr = 0;
+      this.progressMain=0;
+      this.isOver = false;
+      this.timer = setInterval(() => {
+        this.progress -= 0.1;
+        this.time -= 0.01;
+        if (this.time <= 0.01) {
+          this.time--;
+          this.currError = true;
+          clearInterval(this.timer);
+          // this.rightN += 0.25;
+          this.errorN += 1;
+          this.next();
+        }
+      }, 10);
+    }
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.wordTest {
+  width: 100%;
+  height: 100%;
+  .clear {
+    content: "";
+    display: block;
+    clear: both;
+  }
+  .wordTest-container {
+    width: 100%;
+    // height: 100%;
+    .test-top {
+      height: 80px;
+      line-height: 80px;
+      display: flex;
+      justify-content: space-around;
+      padding: 20px 0;
+      .test-lv {
+        font-size: 18px;
+      }
+      .el-progress{
+        width:600px;
+        line-height: inherit;
+        .el-progress__text{
+          display: none;
+        }
+        .el-progress-bar{
+          padding-right: 0;
+        }
+      }
+      .test-res {
+        width: 205px;
+        p {
+          display: inline-block;
+          margin: 0 10px;
+        }
+        .test-right {
+          color: #56bdff;
+        }
+        .test-err {
+          color: #ff7676;
+        }
+      }
+      .test-again {
+        height: 40px;
+        margin: auto 0;
+      }
+    }
+    .test-main {
+      width: 700px;
+      margin: 0 auto;
+      .word-content {
+        width: 70%;
+        text-align: center;
+        margin: 0 auto;
+        .test-word {
+          font-size: 60px;
+          color: #55bdfd;
+        }
+        .progress {
+          margin: 10px 0;
+        }
+      }
+      .content-container {
+        position: relative;
+        margin-top: 30px;
+        min-height: 360px;
+        .word-list {
+          position: absolute;
+          list-style: none;
+          width: 100%;
+          padding: 10px 30px;
+          box-sizing: border-box;
+          .item-container {
+            height: 55px;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            position: relative; //配合 对错号 做定位
+            .word-item {
+              height: 100%;
+              text-align: center;
+              display: flex;
+              justify-content: flex-start;
+              align-items: center;
+              border: 2px #ddd solid;
+              border-radius: 10px;
+              padding: 0 50px;
+              p {
+                margin-left: 20px;
+              }
+            }
+            img {
+              position: absolute;
+              right: -30px;
+              top: 25px;
+              width: 25px;
+            }
+          }
+        }
+      }
+    }
+    .test-score {
+      width: 700px;
+      margin: 20px auto;
+      text-align: center;
+      .test-score-title {
+        font-size: 25px;
+        color: #60baf1;
+        margin: 20px 0;
+      }
+      .test-score-face {
+        width: 180px;
+        margin: 30px 0;
+      }
+      .test-score-text {
+        font-size: 20px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+    }
+    .pauseBtn {
+      width: 100px;
+      float: right;
+      margin-right: 100px;
+    }
+  }
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: all 1s;
+  }
+  .fade-enter,
+  .fade-leave-active {
+    opacity: 0;
+  }
+  .fade-enter {
+    transform: translateX(680px);
+  }
+  .fade-leave-active {
+    transform: translateX(-680px);
+  }
+  .right-active {
+    background: #0fe573;
+    color: #f7f7f7;
+  }
+  .error-active {
+    background: #ff7676;
+    color: #f7f7f7;
+  }
+  .right-active-two {
+    background: #0fe573;
+    color: #f7f7f7;
+  }
+  .right-active-three {
+    background: #EFEFF4;
+    color:#000;
+    border:2px solid #0fe573 !important;
+  }
+}
+</style>

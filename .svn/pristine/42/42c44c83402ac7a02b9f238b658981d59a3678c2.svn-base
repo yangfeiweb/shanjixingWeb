@@ -1,0 +1,170 @@
+<template>
+  <div class="exam-records-base">
+    <div class="resultContainer">
+      <ul class="listContainer" v-for="(item,index) in dataList" :key="index">
+        <li class="list-item">
+          <p class="indexNo">{{index+page*7+1}}</p>
+          <p class="startTime">{{item.createTime}}</p>
+          <p class="name">{{item.name}}</p>
+          <div class="answerNo">
+            <p>共 {{item.total}} 题</p>
+            <p>对 {{item.corrects}} 题</p>
+            <p>错 {{item.incorrects}} 题</p>
+          </div>
+          <!-- <p>用时：{{item.time}}</p> -->
+          <p class="useTime">{{item.useTime}}</p>
+          <p class="score" v-if="item.examType!== 'WORD'">{{item.score}}分</p>
+          <p class="score" v-if="item.examType== 'WORD'">词汇量：{{item.score}}个</p>
+          <div class="btnGroup">
+            <el-button type="text" @click="checkDetail(dataList[index])">查看</el-button>
+            <!-- <i class="shu" v-if="item.examType!== 'WORD'">|</i>
+            <el-button type="text" @click="delBtn">删除</el-button> -->
+          </div>
+        </li>
+      </ul>
+    </div>
+    <el-pagination background @size-change="handleSizeChange" @current-change="handleCurrentChange" layout="total, prev, pager, next" :page-sizes="[7]" :page-size="7" :total="totalRecords">
+    </el-pagination>
+  </div>
+</template>
+
+<script>
+import dataService from "@/service/index";
+
+export default {
+  data() {
+    return {
+      dataList2: [],
+      totalRecords: 0, // 总记录数,
+      page: 0 // 当前页号
+    };
+  },
+  mounted() {
+    this.getData();
+  },
+  computed: {
+    dataList: function() {
+      let newArray = this.dataList2;
+      newArray.forEach(e => {
+        if (e.finishedTime) {
+          // 计算测试用时
+          let date1 = new Date(e.createTime);
+          let date2 = new Date(e.finishedTime);
+          let s1 = date1.getTime();
+          let s2 = date2.getTime();
+          let totalTime = (s2 - s1) / 1000;
+          let day = parseInt(totalTime / (24 * 60 * 60)); // 计算整数天数
+          let afterDay = totalTime - day * 24 * 60 * 60; // 取得算出天数后剩余的秒数
+          let hour = parseInt(afterDay / (60 * 60)); // 计算整数小时数
+          let afterHour = totalTime - day * 24 * 60 * 60 - hour * 60 * 60; // 取得算出小时数后剩余的秒数
+          let min = parseInt(afterHour / 60); // 计算整数分
+          let afterMin =
+            totalTime - day * 24 * 60 * 60 - hour * 60 * 60 - min * 60;
+          e.useTime = "用时：" + min + "分" + afterMin + "秒";
+        } else {
+          e.useTime = "测试未完成";
+        }
+        if (!e.score) {
+          e.score = 0;
+        }
+      });
+      return newArray;
+    }
+  },
+  methods: {
+    // 获取数据
+    getData() {
+      let load = this.$loading({
+        background: "rgba(0,0,0,0.1)"
+      });
+      dataService.getParperList(this.page, 7).then(
+        res => {
+          let code = res.data.code;
+          let msg = res.data.msg;
+          if (code === 200) {
+            let data = res.data.data;
+            this.totalRecords = data.totalRecords;
+            this.dataList2 = data.content;
+          }
+          if (code === 500) {
+            this.$message.error(msg);
+          }
+          load.close();
+        },
+        err => {
+          load.close();
+          console.log("-------------------err", err);
+        }
+      );
+    },
+    checkDetail(data) {
+      this.$emit("checkDetail", data);
+    },
+    handleSizeChange(val) {
+      console.log(`每页 ${val} 条`);
+    },
+    handleCurrentChange(val) {
+      console.log(`当前页: ${val}`);
+      this.page = val - 1;
+      this.getData();
+    }
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.exam-records-base {
+  .resultContainer {
+    padding: 10px;
+    font-size: 18px;
+    .listContainer {
+      width: 100%;
+      .list-item {
+        min-height: 93px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+        .indexNo {
+          width: 50px;
+        }
+        .startTime {
+          width: 100px;
+        }
+        .name {
+          width: 450px;
+          color: #41a0cd;
+        }
+        .useTime {
+          width: 150px;
+          text-align: left;
+          padding-left: 15px;
+        }
+        .answerNo {
+          width: 250px;
+          display: flex;
+          justify-content: space-around;
+        }
+        .score {
+          width: 150px;
+          color: #fa1c2c;
+        }
+        .btnGroup {
+          width: 100px;
+          text-align: right;
+          .el-button--text {
+            font-size: 18px;
+          }
+          .shu {
+            color: #409eff;
+          }
+        }
+      }
+    }
+  }
+  .el-pagination {
+    text-align: right;
+  }
+}
+</style>

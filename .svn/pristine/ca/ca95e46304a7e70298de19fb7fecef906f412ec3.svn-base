@@ -1,0 +1,336 @@
+<template>
+  <div class="testResultDetail">
+    <nav-header class="resultDetail-header">
+      <span slot="title">测试详情</span>
+    </nav-header>
+    <div class="resultDetail-top">
+      <p>测试时间：{{testData.startTime}}</p>
+      <div class="answerNo">
+        <p>
+          <span>共 {{testData.total}} 题</span>
+          <span>对 {{testData.rightCount}} 题</span>
+          <span>错 {{testData.errorCount}} 题</span>
+        </p>
+        <p>{{testData.name}}</p>
+      </div>
+      <p>用时{{testData.useTime}}</p>
+      <p>姓名：
+        <span class="userName">
+          13700000000
+        </span>
+      </p>
+      <p>分数：
+        <span class="score">
+          {{testData.score}}
+        </span>
+      </p>
+    </div>
+    <div class="resultContainer">
+      <ul class="listContainer" v-for="(item,index) in dataList" :key="index">
+        <li class="list-item">
+          <p class="answerItem">
+            <span class="number">{{index+1}}</span>
+            <span :class="{errorColor:item.answerItem!==item.rightItem}"> [ {{item.answerItem}} ]</span>
+          </p>
+          <p class="wordName" :class="{errorColor:item.answerItem!==item.rightItem}">{{item.wordName}}</p>
+          <p class="options" :class="{rightColor:item.rightItem=='A'}">A. {{item.itemA}}</p>
+          <p class="options" :class="{rightColor:item.rightItem=='B'}">B. {{item.itemB}}</p>
+          <p class="options" :class="{rightColor:item.rightItem=='C'}">C. {{item.itemC}}</p>
+          <p class="options" :class="{rightColor:item.rightItem=='D'}">D. {{item.itemD}}</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      dataList: [
+        {
+          answerItem: "A",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "A",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase1",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "B",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "A",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase2",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "none",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "C",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase3",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "A",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "B",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase4",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "D",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "A",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase5",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "none",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "B",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase6",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "D",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "A",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase7",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "A",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "C",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase8",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "D",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "D",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase9",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "C",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "C",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase10",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "B",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "B",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase11",
+          wordNo: "979246436269027329"
+        },
+        {
+          answerItem: "A",
+          bookNo: "973446243380469761",
+          examId: 2,
+          id: 21,
+          itemA: "第三代岁的斯蒂芬A",
+          itemB: "第三代岁的斯蒂芬B",
+          itemC: "第三代岁的斯蒂芬C",
+          itemD: "第三代岁的斯蒂芬D",
+          rightItem: "B",
+          synced: 0,
+          syncedTime: "",
+          wordName: "erase12",
+          wordNo: "979246436269027329"
+        }
+      ],
+      testData: {
+        // errorCount: 16,
+        // examType: "learn_before_test",
+        // finishedTime: "2018-04-20 09:40:21",
+        // id: 1,
+        // name: "新课标小学英语单词体验版 认读（体验版01-学前测试）",
+        // rightCount: 4,
+        // score: 10,
+        // startTime: "2018-04-20 09:40:21",
+        // status: "",
+        // studentNo: "979300178135650305",
+        // total: 20
+      }
+    };
+  },
+  mounted() {
+    //传递过来的参数
+    this.testData = this.$route.params.data;
+    console.log("---------传过来 参数", this.testData);
+    //判断用户是否有选择的答案
+    this.dataList.forEach(e => {
+      // console.log("----------e.answerItem", e.answerItem);
+      if (e.answerItem == "none") {
+        e.answerItem = "_";
+      }
+    });
+  },
+  methods: {}
+};
+</script>
+
+<style lang="scss">
+.testResultDetail {
+  width: 100%;
+  .resultDetail-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  .resultDetail-top {
+    position: fixed;
+    top: 70px;
+    right: 0;
+    left: 0;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    min-height: 80px;
+    font-size: 18px;
+    background: #f7f7f7;
+    .answerNo {
+      text-align: center;
+    }
+    .userName {
+      font-size: 32px;
+    }
+    .score {
+      font-size: 46px;
+      color: #ff0000;
+    }
+  }
+  .resultContainer {
+    margin-top: 150px;
+    padding: 10px;
+    font-size: 18px;
+    .listContainer {
+      width: 100%;
+      .list-item {
+        min-height: 100px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        border-bottom: 1px solid #eaeaea;
+        .answerItem {
+          width: 100px;
+          .number {
+            display: inline-block;
+            width: 30px;
+            margin-right: 5px;
+          }
+        }
+        .wordName {
+          width: 150px;
+        }
+        .options {
+          width: 200px;
+        }
+      }
+    }
+  }
+  .rightColor {
+    color: #3cb63b;
+  }
+  .errorColor {
+    color: #ff0000;
+  }
+}
+</style>

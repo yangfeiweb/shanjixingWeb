@@ -1,0 +1,172 @@
+<template>
+	<div class="unKnowWord clear"> 
+    <div class="header">
+      <nav-header :showBack='false'>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">生词本</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="book-container">
+      <vue-better-scroll
+      style="height:100%"
+      class="wrapper"
+      ref="scroll"
+      >
+        <ul class="book-list" v-for="(item,index) in dataList" :key='index'>
+          <li class="list-item" @click="goDetail(index)">
+            <img class="book-img" :src='item.imgUrl'>
+            <div class="book-intro">
+              <p>{{item.name}}</p>
+              <p>共有{{item.wordNo}}个生词</p>
+            </div>
+            <div class="arrow"></div>
+          </li>
+        </ul>
+      </vue-better-scroll>
+    </div>
+	</div>
+</template>
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import utility from "@/utility/utility";
+import index from 'vue';
+
+export default {
+  data() {
+    return {
+      dataList: [
+        {
+          name: "新课标小学英语单词体验版1",
+          wordNo: "11",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版2",
+          wordNo: "12",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版3",
+          wordNo: "13",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版4",
+          wordNo: "14",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版5",
+          wordNo: "15",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版6",
+          wordNo: "16",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版7",
+          wordNo: "17",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版8",
+          wordNo: "18",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版8",
+          wordNo: "18",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版9",
+          wordNo: "19",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版20",
+          wordNo: "20",
+          imgUrl: "static/images/head.png"
+        },
+        {
+          name: "新课标小学英语单词体验版21",
+          wordNo: "21",
+          imgUrl: "static/images/head.png"
+        }
+      ]
+    };
+  },
+
+  methods: {
+    goDetail(index){
+      console.log("-----------生词详情",index);
+      this.$router.push({name: 'unKnowDetail',params:{index:index}});
+    }
+  },
+  components: {
+    navHeader,
+    VueBetterScroll
+  }
+};
+</script>
+<style lang="scss">
+.unKnowWord {
+  width: 100%;
+  height: 100%;
+  .book-container {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow: hidden;
+      .book-list {
+        width: 60%;
+        list-style: none;
+        margin: 0 auto;
+        padding: 0 30px;
+        .list-item {
+          height: 120px;
+          border: 2px solid #ddd;
+          padding: 10px;
+          margin-bottom: 15px;
+          border-radius: 5px;
+          background: #ffffff;
+          box-shadow: #c2c1c6 3px 3px 10px 2px;
+          position: relative; //配合箭头做绝对定位
+          .book-img {
+            width: 100px;
+            float: left;
+          }
+          .book-intro {
+            float: left;
+            margin-top: 40px;
+            margin-left: 10px;
+          }
+          .arrow {
+            float: right;
+            width: 15px;
+            height: 15px;
+            border: 3px solid #66C3FF;
+            border-width: 0 2px 2px 0;
+            transform: rotate(315deg);
+            margin:50px 20px 0 0 ;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

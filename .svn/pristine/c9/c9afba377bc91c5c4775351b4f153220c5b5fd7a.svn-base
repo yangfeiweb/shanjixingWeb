@@ -1,0 +1,83 @@
+import VueResource from "vue-resource";
+import Vue from "vue";
+import router from "@/router/index";
+import utility from "./utility";
+import MD5 from "md5";
+Vue.use(VueResource);
+let token = "";
+export default function(url = "", params = {}, type = "GET") {
+    let result = setRequest(url, params, type);
+    result.then(
+        res => {
+            let resultData = res.data;
+            let code = resultData.code;
+            if (code === 200) {
+                let index = url.indexOf("login");
+                if (index !== -1) {
+                    let data = resultData.data;
+                    token = data.token;
+                    localStorage.setItem("token", token); //存储token
+                    console.log(token, "-----------token");
+                }
+                if (url.indexOf("logout") !== -1) {
+                    token = "";
+                }
+            }
+            if (code === 401) {
+                router.push({ name: "login" });
+            }
+        },
+        err => {
+            console.log("-----err", err);
+        }
+    );
+    return result;
+}
+
+function setRequest(url, params = {}, type) {
+    token = localStorage.getItem("token");
+    if (token) {
+        params["token"] = token;
+    }
+    params["version"] = "1.0.0";
+    let formData = new FormData();
+    for (let key in params) {
+        formData.append(key, params[key]);
+    }
+    params["ts"] = utility.getTs();
+    let sign = getRequestSign(params);
+    params["sign"] = sign;
+    let result;
+    if (type.toUpperCase() === "GET") {
+        result = Vue.http.get(url, { params: params, timeout: 60000 });
+    } else if (type.toUpperCase() === "POST") {
+        result = Vue.http.post(url, params, {
+            emulateJSON: true,
+            timeout: 60000
+        });
+    }
+    return result;
+}
+
+export function getRequestSign(params) {
+    if (!params) {
+        params = {};
+    }
+    let paramArr = [];
+    for (let key in params) {
+        let val = params[key];
+        if (val !== undefined && val !== null && val !== "") {
+            paramArr.push(`${key}=${val}`);
+        }
+    }
+    paramArr.sort();
+
+    let key = "03c408b46416692e961e8e6accc23d26";
+    // let key = "111111";
+    // if (process.env.NODE_ENV === 'production') {
+    /* key =
+       'aEpPb3dld2w3QU1BdGI2aTQyMWxYNlRxRW81WTFWd3BOSlRMaXUyU3RUeWZMcm9VQ0Z1TG5qalhpSWdhM25OZw=='
+     // }*/
+    let paramStr = paramArr.join("&") + `&key=${key}`;
+    return MD5(paramStr).toString();
+}

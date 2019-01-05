@@ -1,0 +1,199 @@
+<template>
+  <div class="course-center cnfont">
+    <nav-header :showBack="false">
+      <div slot="title">课程中心</div>
+    </nav-header>
+    <el-tabs v-model="activeName" @tab-click="handleClick" type="border-card">
+      <el-tab-pane :label="item.name" v-for="item in bookList" :key="item.key" :name="item.key">
+        <div class="book-container">
+          <vue-better-scroll style="height:100%" class="wrapper" ref="scroll">
+            <ul style="list-style:none" v-for="item in list" :key="item.key" v-loading="loading"   element-loading-text="拼命加载中"
+    element-loading-spinner="el-icon-loading">
+              <div style="width:100%;margin-top:20px;">
+                单词速记
+              </div>
+              <li style="float:left;width:150px;height:180px;padding:20px" v-for="llll in item.books" :key="llll.value" @click="courseDialog(llll)">
+                <img :src='url+llll.coverImgUrl' class="bookImg">
+                <div>{{llll.name}}</div>
+              </li>
+            </ul>
+          </vue-better-scroll>
+        </div>
+      </el-tab-pane>
+    </el-tabs>
+    <course-dialog :show.sync="courseDialogShow" :bookInfo="bookInformantion"></course-dialog>
+  </div>
+</template>
+
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { ResourcePath } from "../../service/urlConfig";
+import courseDialog from "../courseCenter/courseDialog";
+import { BOOK_CATEGORY, BOOK_COLUMN_TYPE } from "../../utility/dict";
+export default {
+  components: {
+    navHeader,
+    VueBetterScroll,
+    courseDialog
+  },
+  data() {
+    return {
+      loading:false,
+      bookInformantion: {},
+      courseDialogShow: false,
+      url: ResourcePath,
+      page: 0,
+      activeName: "FREE",
+      bookList: [],
+      bookSort: "",
+      bookType: "",
+      list: []
+    };
+  },
+  mounted() {
+    this.bookType = "FREE";
+    this.getList();
+    let categoryObj = {};
+    for (let key in BOOK_CATEGORY) {
+      let val = BOOK_CATEGORY[key];
+      categoryObj[key] = {
+        key: key,
+        name: val,
+        books: []
+      };
+    }
+    this.bookList = categoryObj;
+  },
+  methods: {
+    courseDialog(val) {
+      console.log("index", val);
+      this.bookInformantion = val;
+      this.courseDialogShow = true;
+    },
+    showDialog() {},
+    handleClick(tab, event, activeName) {
+      this.bookType = this.activeName;
+      this.getList();
+    },
+    getList() {
+      this.loading=true;
+      let categoryObj = {};
+      for (let key in BOOK_CATEGORY) {
+        let val = BOOK_CATEGORY[key];
+        categoryObj[key] = {
+          key: key,
+          name: val,
+          books: []
+        };
+      }
+      this.list = [];
+      dataService.getBookList(0, 100, this.bookSort, this.bookType).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code == 200) {
+            this.loading=false;
+            data.content.forEach(item => {
+              let key = item.bookType;
+              let categoryItem = categoryObj[key];
+              if (categoryItem) {
+                categoryItem.books.push(item);
+              }
+            });
+            let categories = [];
+            for (let key in categoryObj) {
+              let val = categoryObj[key];
+              let books = val.books;
+              // 课本分组
+              let groups = [];
+              books.forEach(item => {
+                let type = item.bookSort;
+                let groupItem = groups.find(group => {
+                  return group.key === type;
+                });
+                if (!groupItem) {
+                  groupItem = {
+                    key: type,
+                    name: BOOK_COLUMN_TYPE[type] || "",
+                    books: []
+                  };
+                  groups.push(groupItem);
+                }
+                groupItem.books.push(item);
+                this.list = groups;
+              });
+
+              categories.push({
+                key: key,
+                name: BOOK_CATEGORY[key] || "",
+                groups: groups
+              });
+            }
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.course-center {
+  width: 100%;
+  .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+    color: #fff;
+    background: #409eff;
+    border-right-color: #dcdfe6;
+    border-left-color: #dcdfe6;
+  }
+  .el-tab-pane div {
+    color: #409eff;
+    font-size: 14px;
+  }
+  .bookImg {
+    width: 150px;
+    height: 150px;
+  }
+  .bookTop {
+    position: static;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .el-tabs--border-card > .el-tabs__content {
+    padding: 0;
+  }
+  .book-container {
+    position: fixed;
+    top: 100px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow-y: scroll;
+      ul {
+        list-style: none;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+      }
+    }
+  }
+}
+</style>
+
+

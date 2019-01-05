@@ -1,0 +1,364 @@
+<template>
+    <div class='learnSidebar'>
+        <div class="titleDiv">
+            <p class="asideP">{{catalogTitle}}</p>
+        </div>
+        <el-aside width="250px" class="aside">
+            <el-menu :default-active="!pauseShow?selection:columnNoIndex" @select="handleSelect" class="el-menu-vertical-demo" background-color="#5A5555" text-color="#fff" @click="getMenu">
+                <el-menu-item :disabled="sidebarData.columnNeedReview==='Y'" v-for="(item,index) in catalogList" :key="index" :index="item.columnNo">
+                    <p>{{index+1}}.{{item.name}}</p>
+                    <p>
+                        条目 {{item.totalWord}} - 已学 :
+                        <i class="correct">{{item.totalLearn}}</i>
+                        | 错误 :
+                        <b class="mistake">{{item.totalWordNote}}</b>
+                    </p>
+                </el-menu-item>
+            </el-menu>
+        </el-aside>
+        <div class="autoPlay">
+            <div slot="content" v-show='playUlShow' class='playUl'>
+                <ul>
+                    <li @click="getPlayCount" class="tipLi" v-for="(item,index) in tipContent" :key='index' :data-i='index'>
+                        {{item}}
+                    </li>
+                </ul>
+            </div>
+            <el-button @click='getplay' type="info">
+                <i :class='playIcon'></i>
+                {{playBtnContent=pauseShow?"停止预览":'快速预览'}}
+            </el-button>
+            <el-button @click='getPause' v-show="pauseShow" type="info">
+                <i :class='pauseIcon'></i>
+                {{pauseContent}}
+            </el-button>
+        </div>
+    </div>
+</template>
+<script>
+import dataService from "@/service/index";
+export default {
+  props: {
+    columnNoIndex: {
+      type: String
+    },
+    catalogList: {
+      type: Array
+    }
+  },
+  components: {},
+  data() {
+    return {
+      catalogTitle: "",
+      playBtnContent: "快速预览",
+      // catalogList:[],
+      selection: "",
+      isLi: true,
+      bookNo: "",
+      tipContent: ["重复1次", "重复2次", "重复3次", "重复4次", "重复5次"],
+      sidebarData: {
+        playOver: false,
+        dialogShow: false,
+        catalogList: [],
+        previewTitle: "",
+        // 本栏目需要学习的栏目编号
+        needLearnColumnNo: "",
+        columnNeedReview: "",
+        columnreviewPlan: 0,
+        columnreviewLearn: 0,
+        columnReviewWords: [],
+        warnDialogStatus: "",
+        selectPlayCount: "",
+        columnPlan: 0,
+        learnWord: 0,
+        previewLearnWord: 0,
+        newWord: 0,
+        sumPlan: 0,
+        sumNewword: 0,
+        totalWord: 0,
+        bookNo: "",
+        pause: false,
+        stopPlay: false,
+        prompt: ""
+      },
+      pauseShow: false,
+      playUlShow: false,
+      pauseContent: "暂停预览",
+      playIcon: "iconfont icon-bofang",
+      pauseIcon: "iconfont icon-bofang1"
+    };
+  },
+  watch: {
+  },
+  methods: {
+    getMenu() {
+      console.log("你哈");
+    },
+    handleSelect(key, keyPath) {
+      if (this.sidebarData.columnNeedReview === "Y") {
+        this.$message({
+          showClose: true,
+          message: "需要复习完毕",
+          type: "warning"
+        });
+      } else {
+        if (!this.pauseShow) {
+          this.selection = key;
+          this.sidebarData.needLearnColumnNo = this.selection;
+          console.log(this.sidebarData.needLearnColumnNo);
+          this.dialogShow = true;
+          if (this.sidebarData.catalogList) {
+            this.catalogList.forEach(item => {
+              if (this.selection === item.columnNo) {
+                this.sidebarData.previewTitle = item.name;
+                this.sidebarData.columnPlan = item.totalWord;
+                this.sidebarData.learnWord = item.totalLearn;
+                this.sidebarData.newWord = item.totalWordNote;
+              }
+            });
+          }
+          if (this.sidebarData.columnPlan === this.sidebarData.learnWord) {
+            // 相等的话提示是否是清空学习记录
+            this.sidebarData.warnDialogStatus = "clearLearn";
+          } else {
+            // 提示是否进行章节测试
+            this.sidebarData.warnDialogStatus = "chapterTest";
+          }
+          this.sidebarData.dialogShow = true;
+          this.$emit("siderData", this.sidebarData);
+        } else {
+          console.log("你好");
+        }
+      }
+    },
+    // 播放次数
+    getPlayCount(e) {
+      console.log(this.playUlShow);
+      this.playUlShow = false;
+      this.sidebarData.selectPlayCount = e.target.getAttribute("data-i");
+      this.sidebarData.dialogShow = false;
+      this.playBtnContent = "停止预览";
+      this.playIcon = "iconfont icon-bofang";
+      this.pauseShow = true;
+      this.$emit("siderData", this.sidebarData);
+    },
+    getPause() {
+      console.log(this.sidebarData.pause);
+      this.sidebarData.pause = !this.sidebarData.pause;
+      console.log(this.sidebarData.pause);
+      if (this.sidebarData.pause) {
+        this.pauseIcon = "iconfont icon-bofang";
+        this.pauseContent = "继续预览";
+      } else {
+        this.pauseIcon = "iconfont icon-bofang1";
+        this.pauseContent = "暂停预览";
+      }
+      this.$emit("siderData", this.sidebarData);
+    },
+    getplay() {
+      if (this.playBtnContent === "停止预览") {
+        this.pauseIcon = "iconfont icon-bofang1";
+        this.playBtnContent = "快速预览";
+        this.pauseContent = "暂停预览";
+        this.pauseShow = false;
+        this.sidebarData.stopPlay = true;
+        this.sidebarData.pause = false;
+        this.sidebarData.columnNeedReview = "N";
+        this.sidebarData.selectPlayCount = "";
+      } else {
+        this.playUlShow = !this.playUlShow;
+        this.sidebarData.stopPlay = false;
+      }
+      this.$emit("siderData", this.sidebarData);
+    },
+    // 获取侧边栏的列表
+    getBookColumn() {
+      dataService.getBookColumn(20, "DEFAULT", this.bookNo).then(
+        res => {
+          console.log("嘿嘿", res);
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code === 200) {
+            this.sidebarData.catalogList = data.columns;
+            this.sidebarData.catalogList = data.columns;
+            this.sidebarData.needLearnColumnNo = data.needLearnColumnNo;
+            if (this.sidebarData.needLearnColumnNo) {
+              this.getBookReviewWords();
+            }
+            this.selection = this.sidebarData.needLearnColumnNo;
+            if (this.sidebarData.catalogList) {
+              this.sidebarData.catalogList.forEach(item => {
+                if (this.selection === item.columnNo) {
+                  this.sidebarData.previewTitle = item.name;
+                  this.sidebarData.columnPlan = item.totalWord;
+                  this.sidebarData.learnWord = item.totalLearn;
+                  this.sidebarData.newWord = item.totalWordNote;
+                }
+              });
+            }
+            this.sidebarData.sumPlan = data.bookTotalLearn;
+            this.sidebarData.sumNewword = data.bookTotalWordNote;
+            this.sidebarData.warnDialogStatus = "chapterTest";
+            this.$emit("siderData", this.sidebarData);
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    // 本课本需要复习的单词
+    getBookReviewWords() {
+      dataService.getBookReviewWords(0, 20, "DEFAULT", this.bookNo).then(
+        res => {
+          console.log("本课本需要复习的单词", res);
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code === 200) {
+            if (data.content.length > 0) {
+              this.sidebarData.columnReviewWords = data.content;
+              this.sidebarData.columnNeedReview = "Y";
+              this.sidebarData.columnreviewPlan = data.content.length;
+              this.sidebarData.dialogShow = false;
+            } else {
+              this.sidebarData.columnNeedReview = "N";
+              this.dialogShow = true;
+            }
+            this.$emit("siderData", this.sidebarData);
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+        }
+      );
+    }
+  },
+  mounted() {
+    if (this.$route.params.bookInfo.bookNo === undefined) {
+      this.$route.push("/learnCenter");
+    } else {
+      this.catalogTitle = this.$route.params.bookInfo.name;
+      this.bookNo = this.$route.params.bookInfo.bookNo;
+      this.sidebarData.totalWord = this.$route.params.bookInfo.words;
+      this.getBookColumn();
+    }
+  },
+  //   watch: {},
+  computed: {}
+};
+</script>
+
+<style lang="scss">
+.learnSidebar {
+  color: #fff;
+  background-color: #5a5555;
+  .titleDiv {
+    width: 234px;
+    background-color: #5a5555;
+    position: absolute;
+    top: 56px;
+    left: 0px;
+    z-index: 20;
+    height: 60px;
+    line-height: 60px;
+    padding: 0 8px;
+    .asideP {
+      height: 60px;
+      line-height: 60px;
+      text-align: center;
+    }
+  }
+  .aside::-webkit-scrollbar {
+    width: 0px;
+  }
+  .aside::-webkit-scrollbar-thumb {
+    background-color: #c2c2c2;
+  }
+  .aside {
+    position: absolute;
+    top: 0px;
+    padding: 0 10px;
+    padding-top: 121px;
+    padding-bottom: 90px;
+    height: 100%;
+    background-color: #5a5555;
+    text-align: center;
+    z-index: 19;
+    .el-menu {
+      border-right: 0;
+      li {
+        height: 75px;
+        p {
+          height: 35px;
+          line-height: 35px;
+          .mistake {
+            color: #fd8081;
+          }
+          .correct {
+            color: #62c1fe;
+            font-style: normal;
+          }
+        }
+      }
+      .is-disabled {
+        opacity: 1;
+        cursor: pointer;
+      }
+      .is-active {
+        color: #fff;
+        background-color: #484444 !important;
+      }
+    }
+  }
+  .autoPlay {
+    width: 250px;
+    position: absolute;
+    bottom: 40px;
+    left: 0px;
+    z-index: 30;
+    background: #797979;
+    text-align: center;
+    height: 50px;
+    line-height: 50px;
+    .playUl {
+      position: absolute;
+      width: 100%;
+      left: 73px;
+      bottom: 45px;
+      ul {
+        list-style: none;
+        .tipLi {
+          background-color: #fff;
+          text-align: center;
+          height: 30px;
+          line-height: 30px;
+          border-bottom: 1px solid #c1c1c1;
+          width: 83px;
+          padding: 5px 10px;
+          text-align: center;
+          background: #fff;
+          color: #303133;
+          font-size: 14px;
+        }
+        .tipLi:hover {
+          background-color: #c1c1c1;
+        }
+      }
+    }
+    .el-button {
+      padding: 8px 13px;
+    }
+  }
+}
+.popper__arrow {
+  display: none;
+}
+</style>

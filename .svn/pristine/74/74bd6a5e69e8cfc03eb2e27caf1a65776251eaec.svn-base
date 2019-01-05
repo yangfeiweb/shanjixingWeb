@@ -1,0 +1,122 @@
+<template>
+    <div class="brainWaveDialog">
+        <el-dialog title="@脑波记忆" :visible.sync="brainWaveShow" width="30%" @close='dialogHide' :show-close='false' center>
+            <p>开启@脑波记忆,进入右脑状态</p>
+            <p>让大脑清醒且轻松,注意力更集中!</p>
+            <p class='controlsContent'>
+
+                <i @click="getLast" class="iconfont icon-music-prev"></i>
+                <i @click='playBack' :class="pauseIcon"></i>
+                <i @click="getNext" class="iconfont icon-next-6"></i>
+            </p>
+            <p class='volumeContent'>
+                <i :class="volumeIcon"></i>
+                <el-slider v-model="volumeVal" class='sliderDiv' :show-tooltip="false"></el-slider>
+            </p>
+            <audio ref="audio" preload :src="audioUrl" loop></audio>
+        </el-dialog>
+    </div>
+</template>
+<script>
+// import dataService from "@/service/index";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    }
+  },
+  components: {},
+  watch: {
+    show(val, oldShow) {
+      this.brainWaveShow = val;
+    },
+    volumeVal(val) {
+      console.log(val);
+      let audio = this.$refs.audio;
+      audio.volume = val / 1000;
+    }
+  },
+  data() {
+    return {
+      brainWaveShow: false,
+      audioUrl: "/static/audio/1.mp3",
+      pauseIcon: "iconfont icon-zanting1",
+      volumeVal: 0,
+      volumeIcon: "iconfont icon-shengyin"
+    };
+  },
+  methods: {
+    dialogHide() {
+      this.$emit("update:show", false);
+    },
+    // 上一首
+    getLast() {
+      console.log("上一首");
+    },
+    // 下一首
+    getNext() {
+      console.log("下一首");
+    },
+    //   点击脑波暂停/播放
+    playBack() {
+      let audio = this.$refs.audio;
+      if (this.pauseIcon === "iconfont icon-zanting1") {
+        this.pauseIcon = "iconfont icon-zanting";
+        audio.play();
+      } else {
+        this.pauseIcon = "iconfont icon-zanting1";
+        audio.pause();
+      }
+    }
+  },
+  mounted() {}
+};
+</script>
+<style lang="scss">
+.brainWaveDialog {
+  .el-dialog__headerbtn .el-dialog__close {
+    color: #fff;
+  }
+  .elDialog {
+    .el-dialog {
+      margin-top: 5vh !important;
+    }
+  }
+  .el-dialog--center .el-dialog__body {
+    margin: 10px 0px;
+    padding: 0px;
+  }
+  .el-dialog__body {
+    padding-bottom: 20px;
+    p {
+      height: 30px;
+      line-height: 30px;
+    }
+    .volumeContent {
+      .iconfont {
+        margin-right: 30px;
+      }
+      .sliderDiv {
+        display: inline-block;
+        width: 150px;
+        .el-slider__runway {
+          margin: 2px 0px;
+        }
+      }
+    }
+    .controlsContent {
+      padding: 20px;
+      .iconfont {
+        font-size: 25px;
+      }
+      i {
+        margin: 0px 30px;
+      }
+      .icon-zanting1 {
+        color: red;
+      }
+    }
+  }
+}
+</style>

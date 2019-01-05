@@ -1,0 +1,310 @@
+<template>
+  <div class="changeInfo-center">
+    <el-dialog :visible.sync="dialogShow" @close="dialogHide" width="30%" title="修改个人资料">
+      <el-form :model="infoForm" :rules="rules" ref="infoForm" label-width="100px">
+        <el-form-item label="姓名：" prop="name">
+          <el-input clearable placeholder="请输入姓名" v-model="infoForm.name" type="text"></el-input>
+        </el-form-item>
+        <el-form-item label="年级：" prop="grade">
+          <el-select clearable v-model="infoForm.grade">
+            <el-option v-for="item in grade" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="性别：" prop="sex">
+          <el-radio-group v-model="infoForm.sex">
+            <el-radio label="女" value="FEMALE"></el-radio>
+            <el-radio label="男" value="MALE"></el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label='选择省:' prop="province">
+          <el-select @change='getProvince' clearable v-model="infoForm.province" placeholder="省份" size='small'>
+            <el-option v-for="(itemp,index) in province" :key='index' :label="itemp.name" :value="itemp.code"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label='选择市:' prop="city">
+          <el-select @change='getCity' clearable v-model="infoForm.city" placeholder="市" size='small'>
+            <el-option v-for="(itemc,index) in city" :key='index' :label="itemc.name" :value="itemc.code"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label='选择县、区:' prop="county">
+          <el-select v-model="infoForm.county" placeholder="县/区" clearable size='small'>
+            <el-option v-for="(itemco,index) in county" :key='index' :label="itemco.name" :value="itemco.code"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="生日：" prop="birthday">
+          <el-date-picker type="date" v-model="infoForm.birthday" placeholder="选择日期时间">
+          </el-date-picker>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="dialogShow=false">取消</el-button>
+        <el-button type="primary" @click="submitForm('infoForm')">确定</el-button>
+      </div>
+    </el-dialog>
+
+  </div>
+</template>
+
+<script>
+import { GRADLE } from "../../utility/dict.js";
+import dataService from "@/service/index";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    },
+    user: {
+      type: Object
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+    },
+    user: function(val) {
+      console.log(val, "-------------wwww,val");
+      if (Object.keys(val).length !== 0) {
+        this.infoForm["name"] = val["name"];
+        this.infoForm["grade"] = val["currentGrade"];
+        if (val["gender"] === "FEMALE") {
+          this.infoForm["sex"] = "女";
+        } else if (val["gender"] === "MALE") {
+          this.infoForm["sex"] = "男";
+        }
+        this.infoForm["province"] = val["provinceCode"];
+        if (val.hasOwnProperty("province") === false) {
+          this.cityCode = val["provinceCode"];
+          this.countyCode = val["cityCode"];
+          this.getIn();
+        }
+        this.infoForm["city"] = val["cityCode"];
+        this.infoForm["county"] = val["districtCode"];
+        this.infoForm["birthday"] = val["birthDate"];
+      }
+    }
+  },
+  data() {
+    return {
+      province: [],
+      city: [],
+      county: [],
+      grade: GRADLE,
+      dialogShow: false,
+      cityCode: "",
+      infoForm: {
+        name: "",
+        grade: "",
+        sex: "",
+        province: "",
+        city: "",
+        county: "",
+        birthday: ""
+      },
+      rules: {
+        name: [{ message: "请输入姓名", trigger: "blur" }],
+        grade: [{ message: "请选择年级", trigger: "blur" }],
+        sex: [{ message: "请选择性别", trigger: "blur" }],
+        province: [{ message: "请选择省份", trigger: "blur" }],
+        city: [{ message: "请选择所在城市", trigger: "blur" }],
+        county: [{ message: "请选择所在县/区", trigger: "blur" }],
+        birthday: [{ message: "请选择生日", trigger: "blur" }]
+      }
+    };
+  },
+  mounted() {
+    this.getSheng();
+  },
+  methods: {
+    getIn() {
+      dataService.searchDivision("CITY", this.cityCode).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code == 200) {
+            this.city = result.data;
+            dataService
+              .searchDivision("DISTRICT", this.countyCode)
+              .then(res => {
+                let result = res.data;
+                let code = result.code;
+                let data = result.data;
+                let msg = result.msg;
+                if (code == 200) {
+                  this.county = result.data;
+                }
+              });
+          }
+          // else {
+          //   this.$message.error(msg);
+          // }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    // 请求省分列表
+    getSheng() {
+      dataService.searchDivision("PROVINCE").then(
+        res => {
+          let result = res.body;
+          let code = result.code;
+          let msg = result.msg;
+          if (code == 200) {
+            this.province = result.data;
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    // 获得省下市
+    getProvince() {
+      dataService.searchDivision("CITY", this.infoForm.province).then(
+        res => {
+          let result = res.body;
+          let code = result.code;
+          let msg = result.msg;
+          if (code == 200) {
+            this.city = result.data;
+            this.infoForm.city = this.city[0].code;
+
+            dataService.searchDivision("DISTRICT", this.city[0].code).then(
+              res => {
+                let result = res.body;
+                let code = result.code;
+                let msg = result.msg;
+                if (code == 200) {
+                  this.county = result.data;
+                  this.infoForm.county = this.county[0].code;
+                } else if (code == 401) {
+                  this.$message.error("请重新登录");
+                } else {
+                  this.$message.error(msg);
+                }
+              },
+              err => {
+                this.$message.error("请求错误");
+              }
+            );
+          } else if (code == 401) {
+            this.$message.error("请重新登录");
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    }, // 获得市下县
+    getCity() {
+      dataService.searchDivision("DISTRICT", this.infoForm.city).then(
+        res => {
+          let result = res.body;
+          let code = result.code;
+          let msg = result.msg;
+          if (code == 200) {
+            this.county = result.data;
+            this.infoForm.county = this.county[0].code;
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    submitForm(formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          console.log("formName", this.infoForm);
+          let overTime = "";
+          if (this.infoForm.birthday) {
+            overTime = this.formatDate(this.infoForm.birthday);
+          }
+          if (this.infoForm.sex === "女") {
+            this.infoForm.sex = "FEMALE";
+          } else if (this.infoForm.sex === "男") {
+            this.infoForm.sex = "MALE";
+          }
+          console.log(this.infoForm.sex);
+          dataService
+            .upDateUserInfo(
+              this.infoForm.name,
+              this.infoForm.sex,
+              overTime,
+              this.infoForm.grade,
+              this.infoForm.county
+            )
+            .then(
+              res => {
+                let result = res.data;
+                let code = result.code;
+                let data = result.data;
+                let msg = result.msg;
+                if (code == 200) {
+                  this.$message.success("修改成功");
+                  this.$parent.getUserInfo();
+                } else {
+                  this.$mesage.error(msg);
+                }
+              },
+              err => {
+                this.$message.error("请求错误");
+              }
+            );
+          this.$parent.name = this.infoForm.name;
+          console.log;
+          this.dialogShow = false;
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
+    formatDate: function(nows) {
+      var now = new Date(nows);
+      var year = now.getFullYear();
+      var month = now.getMonth() + 1;
+      var date = now.getDate();
+      if (month > 0 && month < 10) {
+        month = "0" + month;
+      }
+      if (date > 0 && date < 10) {
+        date = "0" + date;
+      }
+      return year + month + date;
+    },
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+      this.dialogShow = false;
+    },
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    }
+  }
+};
+</script>
+<style lang="scss">
+.changeInfo-center {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #ebeef5;
+
+  .el-dialog__header {
+    background: #66b1ff;
+  }
+  .el-form-item__error {
+    left: 65px;
+  }
+}
+</style>

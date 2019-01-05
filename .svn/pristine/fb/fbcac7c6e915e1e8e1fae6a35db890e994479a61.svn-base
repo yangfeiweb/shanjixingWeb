@@ -1,0 +1,115 @@
+.con-mask {
+        width: 100%;
+        z-index: 3;
+        height: 100%;
+        position: absolute;
+        background-color: rgba(0, 0, 0, 0.4);
+        display: none;
+    }
+    .removeMessage{
+        width: 300px;
+        height: 80px;
+        background-color: white;
+        text-align: center;
+        display: none;
+        padding: 20px;
+        position: absolute;
+        left: 50%;
+        top: 50%;   
+        z-index: 20;
+        transform: translate(-50%,-50%);    
+    }
+    .center {
+        padding: 8px 15px 15px 15px;
+        width: 100%;
+        box-sizing: border-box;
+        .header {
+            margin-top: 5px;
+            width: 100%;
+            height: 30px;
+            line-height: 30px;
+            background: white;
+            span {
+                padding-left: 20px;
+            }
+        }
+        .search {
+            margin-top: 10px;
+            width: 100%;
+            position: static;
+            height: 50px;
+            line-height: 50px;
+            padding-left: 10px;
+            background: white;
+            transform: skew(10deg);
+            box-sizing: border-box;
+            .s-con {
+                transform: skew(-10deg);
+                width: 925px;
+                span {
+                    padding-left: 50px;
+                }
+                span:nth-of-type(1) {
+                    padding-left: 10px;
+                }
+            }
+        }
+        .list {
+            margin-top: 10px;
+            background-color: white;
+            .btn {
+                height: 42px;
+                line-height: 42px;
+                padding-left: 20px;
+                button {
+                    color: white;
+                    border: none;
+                    background-color: #5282CF;
+                    border-radius: 7px;
+                    padding: 5px 10px 5px 10px;
+                    outline: none;
+                    margin-right: 10px;
+                    cursor: pointer;
+                }
+            }
+            .data>.table {
+                margin-top: 4px;
+                border-collapse: collapse;
+                width: 100%;
+                border: 1px solid #E1E6EB;
+                border-left: none;
+            }
+            .table thead th {
+                line-height: 20px;
+                padding: 8px 12px;
+                border-bottom: 1px solid #E1E6EB;
+                border-left: 1px solid #E1E6EB;
+                white-space: nowrap;
+                text-align: center;
+                font-weight: normal !important;
+                letter-spacing: 1px;
+            }
+            .table tbody td {
+                text-align: center;
+                line-height: 20px;
+                padding: 8px 10px;
+                font-size: 13px;
+                border-bottom: 1px solid #E1E6EB;
+                border-left: 1px solid #E1E6EB;
+                input[type='checkbox'] {
+                    width: 16px;
+                    height: 16px;
+                    vertical-align: middle;
+                }
+                button {
+                    color: white;
+                    border: none;
+                    border-radius: 7px;
+                    padding: 5px 10px 5px 10px;
+                    outline: none;
+                    margin-right: 10px;
+                    cursor: pointer;
+                }
+            }
+        }
+    }

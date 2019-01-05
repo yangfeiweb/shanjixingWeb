@@ -1,0 +1,25 @@
+import reqUrl from '../urlConfig'
+import fetch from "@/utility/http"
+// 统计学会的单词
+let getStatisticsWords = (studentNo, statisticsType, start, end) =>
+    fetch(reqUrl.GETSTATISTICSWORDS, {
+        studentNo: studentNo,
+        statisticsType: statisticsType,
+        start: start,
+        end: end
+    }, 'GET')
+    // 统计错词
+let getStatisticsWrongWords = (studentNo, statisticsType, start, end) =>
+    fetch(reqUrl.GETSTATISTICSWRONGWORDS, {
+        studentNo: studentNo,
+        statisticsType: statisticsType,
+        start: start,
+        end: end
+    }, 'GET')
+
+
+export default {
+    getStatisticsWords,
+    getStatisticsWrongWords
+
+}

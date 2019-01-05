@@ -1,0 +1,231 @@
+<template>
+  <div class="course-center cnfont">
+    <nav-header :showBack="false">
+      <div slot="title">课程中心</div>
+    </nav-header>
+    <el-tabs v-model="activeName" @tab-click="handleClick" type="border-card">
+      <el-tab-pane :label="item.name" v-for="item in bookList" :key="item.key" :name="item.key">
+        <ul v-loading="loading" element-loading-text="拼命加载中" element-loading-spinner="el-icon-loading">
+          <div class="clearfix linn-ling">
+            <div v-for="item in list" :key="item.key" class="book-over clearfix">
+              <div class="course-booklist clearfix">
+                <span class="book-left"></span>
+                <span class="book-right">{{item.name}}</span>
+              </div>
+              <li v-for="book in item.books" :key="book.value" @click="courseDialog(book)" class="book-img clearfix">
+                <img :src='url+book.coverImgUrl' class="bookImg">
+                <div>{{book.name}}</div>
+              </li>
+            </div>
+          </div>
+        </ul>
+      </el-tab-pane>
+    </el-tabs>
+    <course-dialog :show.sync="courseDialogShow" :bookInfo="bookInformantion"></course-dialog>
+  </div>
+</template>
+
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { ResourcePath } from "../../service/urlConfig";
+import courseDialog from "../courseCenter/courseDialog";
+import { BOOK_CATEGORY, BOOK_COLUMN_TYPE } from "../../utility/dict";
+export default {
+  components: {
+    navHeader,
+    VueBetterScroll,
+    courseDialog
+  },
+  data() {
+    return {
+      loading: false,
+      bookInformantion: {},
+      courseDialogShow: false,
+      url: ResourcePath,
+      page: 0,
+      activeName: "FREE",
+      bookList: [],
+      bookSort: "",
+      bookType: "",
+      list: []
+    };
+  },
+  mounted() {
+    this.bookType = "FREE";
+    this.getList();
+    let categoryObj = {};
+    for (let key in BOOK_CATEGORY) {
+      let val = BOOK_CATEGORY[key];
+      categoryObj[key] = {
+        key: key,
+        name: val,
+        books: []
+      };
+    }
+    this.bookList = categoryObj;
+    // console.log(this.bookList,"-------------this.bookList")
+  },
+  methods: {
+    courseDialog(val) {
+      console.log("index", val);
+      this.bookInformantion = val;
+      this.courseDialogShow = true;
+    },
+    showDialog() {},
+    handleClick(tab, event, activeName) {
+      this.bookType = this.activeName;
+      this.getList();
+    },
+    getList() {
+      this.loading = true;
+      let categoryObj = {};
+      for (let key in BOOK_CATEGORY) {
+        let val = BOOK_CATEGORY[key];
+        categoryObj[key] = {
+          key: key,
+          name: val,
+          books: []
+        };
+      }
+      this.list = [];
+      dataService.getBookList(0, 100, this.bookSort, this.bookType).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code === 200) {
+            this.loading = false;
+            data.content.forEach(item => {
+              let key = item.bookType;
+              let categoryItem = categoryObj[key];
+              if (categoryItem) {
+                categoryItem.books.push(item);
+              }
+            });
+            let categories = [];
+            for (let key in categoryObj) {
+              let val = categoryObj[key];
+              let books = val.books;
+              // 课本分组
+              let groups = [];
+              books.forEach(item => {
+                let type = item.bookSort;
+                let groupItem = groups.find(group => {
+                  return group.key === type;
+                });
+                if (!groupItem) {
+                  groupItem = {
+                    key: type,
+                    name: BOOK_COLUMN_TYPE[type] || "",
+                    books: []
+                  };
+                  groups.push(groupItem);
+                }
+                groupItem.books.push(item);
+                this.list = groups;
+              });
+              console.log(this.list, "------------- this.list");
+              categories.push({
+                key: key,
+                name: BOOK_CATEGORY[key] || "",
+                groups: groups
+              });
+            }
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+        }
+      );
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.course-center {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  .clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+  // overflow: hidden;
+  .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+    color: #fff;
+    background: #409eff;
+    border-right-color: #dcdfe6;
+    border-left-color: #dcdfe6;
+  }
+  .el-tab-pane div {
+    color: #409eff;
+    font-size: 14px;
+  }
+  .bookImg {
+    width: 120px;
+    height: 120px;
+    img {
+      width: 100%;
+    }
+  }
+  .bookTop {
+    position: static;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  .el-tabs--border-card > .el-tabs__content {
+    padding: 0;
+  }
+  ul {
+    list-style: none;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    position: relative;
+    .linn-ling {
+      position: fixed;
+      top: 120px;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      overflow: auto;
+      .book-over {
+        padding-left:30px;
+        .course-booklist {
+          width: 100%;
+          height: 50px;
+          line-height: 50px;
+          background: linear-gradient(to right, #e4e7ed, #f7f7f7);
+          .book-left {
+            width: 10px;
+            height: 50px;
+            background: #409eff;
+            display: inline-block;
+          }
+          .book-right {
+            width: 100%;
+            height: 50px;
+            line-height: 50px;
+            position: relative;
+            top: -15px;
+          }
+        }
+      }
+      .book-img {
+        float: left;
+        width: 120px;
+        height: 180px;
+        padding: 10px;
+      }
+    }
+  }
+}
+</style>

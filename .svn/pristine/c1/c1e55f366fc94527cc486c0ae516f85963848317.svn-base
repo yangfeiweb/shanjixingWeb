@@ -1,0 +1,150 @@
+<template>
+  <div class="unKnowDetail clear">
+    <div class="header">
+      <nav-header>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">{{bookName}}共({{newWord}})条</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="book-container">
+      <vue-better-scroll style="height:100%" class="wrapper" ref="scroll">
+        <ul class="book-list" v-for="(item,index) in dataList" :key='index'>
+          <li class="list-item">
+            <p class="word">
+              <span class="word-name">{{item.content1}}</span>
+              <span>{{item.content2}}</span>
+            </p>
+            <div>
+              <p>{{item.means[0].chinese}}</p>
+              <p>{{item.means[1].english}}</p>
+            </div>
+            <ul v-for="(dish,idx) in item.examples" :key="idx" style="listStyle:none">
+              <li class="case-item">{{dish.case}}</li>
+            </ul>
+          </li>
+        </ul>
+      </vue-better-scroll>
+    </div>
+  </div>
+</template>
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import utility from "@/utility/utility";
+import index from "vue";
+import dataService from "@/service/index";
+
+export default {
+  data() {
+    return {
+      newWord: "",
+      bookName: "",
+      dataList2: []
+    };
+  },
+  mounted() {
+    // console.log(this.$route.params.item, "this.params.item");
+    this.bookName = this.$route.params.item.name;
+    this.newWord = this.$route.params.item.totalWordNotes;
+    this.getWordList();
+    console.log("---测试用--index", this.$route.params.index);
+    this.$refs.scroll.forceUpdate(true);
+  },
+  methods: {
+    getWordList() {
+       this.dataList2 = [];
+      dataService
+        .unKnownWord(0, 200, this.$route.params.item.bookNo, "DEFAULT")
+        .then(
+          res => {
+            let result = res.data;
+            let data = result.data;
+            let msg = result.msg;
+            let code = result.code;
+            if (code == 200) {
+              this.dataList2 = data.content;
+            } else {
+              this.$message.error(msg);
+            }
+          },
+          err => {
+            this.$message.error("请求错误");
+          }
+        );
+    }
+  },
+  computed: {
+    dataList: function() {
+      let words = _.cloneDeep(this.dataList2 || []);
+      words.forEach(e => {
+        let mean = e.content3.split("<br />");
+        let example = e.content4.split("<br />");
+        // console.log("---------mean",mean);
+        // console.log("---------example",example);
+        e.means = [{ chinese: mean[1] }, { english: mean[2] }];
+        e.examples = [];
+        for (let i = 0; i < example.length; i++) {
+          e.examples.push({ case: example[i] });
+        }
+      });
+      console.log("---------words", words);
+      return words;
+    }
+  },
+  components: {
+    navHeader,
+    VueBetterScroll
+  }
+};
+</script>
+<style lang="scss">
+.unKnowDetail {
+  width: 100%;
+  height: 100%;
+  .book-container {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow: auto;
+      .book-list {
+        width: 60%;
+        list-style: none;
+        margin: 0 auto;
+        padding: 0 30px;
+        .list-item {
+          min-height: 120px;
+          color: #767676;
+          border: 2px solid #ddd;
+          padding: 20px 10px;
+          margin-bottom: 15px;
+          border-radius: 5px;
+          background: #ffffff;
+          box-shadow: #c2c1c6 1px 2px 1px 2px;
+          .word {
+            margin-bottom: 30px;
+            .word-name {
+              font-size: 24px;
+              color: #22aefe;
+              margin-right: 10px;
+            }
+          }
+          .case-item {
+            line-height: 24px;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

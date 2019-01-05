@@ -1,0 +1,37 @@
+import Vue from 'vue'
+import Router from 'vue-router'
+
+Vue.use(Router)
+// 登录
+import login from '@/pages/login.vue'
+// 注册
+import regist from '@/pages/regist.vue'
+// 忘记密码
+import forgetPwd from '@/pages/forgetPwd.vue'
+// 词汇测试
+import wordTest from '@/pages/wordTest.vue'
+
+export default new Router({
+  routes: [
+    {
+      path: '/',
+      name: 'login',
+      component: login
+    },
+    {
+      path: '/regist',
+      name: 'regist',
+      component: regist
+    },
+    {
+      path: '/forgetPwd',
+      name: 'forgetPwd',
+      component: forgetPwd
+    },
+    {
+      path: '/wordTest',
+      name: 'wordTest',
+      component: wordTest
+    }
+  ]
+})

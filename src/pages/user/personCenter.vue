@@ -1,0 +1,327 @@
+<template>
+  <div class="person-center">
+    <nav-header>
+      <span slot="title">个人中心</span>
+      <div class="logout" @click="logout" slot="right" title="退出登录">
+        <i class="iconfont icon-Logout"></i>
+      </div>
+    </nav-header>
+    <div class="person_container">
+      <div class="person-img">
+        <div class="headerImg" @click="selectIcons">
+          <img :src="iconImgurl" alt="" srcset="">
+        </div>
+        <div class="right-name">
+          <div @click="updateInfo" style=" cursor: pointer;">
+            <i class="iconfont icon-bianji change"></i>
+            <span style="margin-left:13px">{{name}}</span>
+          </div>
+          <div>
+            <i class="iconfont icon-shijian date"></i>
+            <span>{{vipDay}}</span>
+          </div>
+        </div>
+        <!-- <div class="logout" @click="logout">
+          <a>
+            <i class="iconfont icon-tuichu">退出登录</i>
+          </a>
+        </div> -->
+      </div>
+      <ul class="person-bottom">
+        <li @click="open">
+          <div class="img-down">
+            <img src="static/images/recharge.png" alt="" srcset="">
+          </div>
+          <div>充值</div>
+        </li>
+        <li>
+          <router-link to="learnStatistics" style="text-decoration:none;color:black;">
+            <div class="img-down">
+              <img src="static/images/study_statistics.png" alt="" srcset="">
+            </div>
+            <div>学习统计</div>
+          </router-link>
+        </li>
+        <li @click="changeDialogShow=true">
+          <div class="img-down">
+            <img src="static/images/change_pwd.png" alt="" srcset="">
+          </div>
+          <div>修改密码</div>
+        </li>
+        <li>
+          <router-link to="examRecords" style="text-decoration:none;color:black;">
+            <div class="img-down">
+              <img src="static/images/test_result.png" alt="" srcset="">
+            </div>
+            <div>测试成绩</div>
+          </router-link>
+        </li>
+        <li>
+          <div class="img-down" @click="aboutDialogShow=true">
+            <img src="static/images/about.png" alt="" srcset="">
+          </div>
+          <div>关于</div>
+        </li>
+      </ul>
+    </div>
+    <change-pwd-dialog :show.sync="changeDialogShow"></change-pwd-dialog>
+    <changeinfo-dialog :show.sync="changeInfodialogShow"></changeinfo-dialog>
+    <about-dialog :show.sync="aboutDialogShow"></about-dialog>
+    <uploadIcon-dialog :show.sync="uploadIconDialogShow" :userList="userInfo"></uploadIcon-dialog>
+    <pay-dialog :show.sync="payDialogShow" @success="paySuccess"></pay-dialog>
+  </div>
+</template>
+
+<script>
+import url from "@/service/urlConfig";
+import { iconPath } from "../../service/urlConfig";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import changePwdDialog from "./children/changePwdDialog";
+import changeinfoDialog from "@/components/changeInfoDialog";
+import aboutDialog from "./children/aboutDialog";
+import uploadIconDialog from "./children/uploadIconDialog";
+import payDialog from "@/components/payDialog";
+export default {
+  components: {
+    navHeader,
+    changePwdDialog,
+    changeinfoDialog,
+    aboutDialog,
+    uploadIconDialog,
+    payDialog
+  },
+  data() {
+    return {
+      payDialogShow: false,
+      uploadIconDialogShow: false,
+      token: "",
+      iconImgurl: "",
+      imgLoading: false,
+      aboutDialogShow: false,
+      isSelected: false,
+      selectItem: 0,
+      activeName2: "first",
+      showDialog: false,
+      imgUrl: iconPath,
+      changeDialogShow: false,
+      changeInfodialogShow: false,
+      name: "未填写姓名",
+      // dataNumber: "VIP已过期",
+      userInfo: {},
+      serviceUrl: url,
+      Icons: [],
+      iconFile: "",
+      vipDay: ""
+    };
+  },
+  mounted() {
+    let icon = localStorage.getItem("icon");
+    this.name = localStorage.getItem("nickName");
+    if (!icon) {
+      this.iconImgurl = "static/userAvatar/default.png";
+    } else {
+      this.iconImgurl = this.imgUrl + icon;
+    }
+    this.paySuccess();
+    // this.getUserInfo();
+  },
+  methods: {
+    selectIcons() {
+      this.uploadIconDialogShow = true;
+    },
+    updateInfo() {
+      this.changeInfodialogShow = true;
+    },
+    // getUserInfo() {
+    //   dataService.getUserInfo().then(
+    //     res => {
+    //       let result = res.data;
+    //       let data = result.data;
+    //       let code = result.code;
+    //       if (code === 200) {
+    //         this.userInfo = data;
+    //         // this.iconImgurl = localStorage.getItem("icon");
+    //         // if (data.hasOwnProperty("icon") === false) {
+    //         //   this.iconImgurl = "static/userAvatar/default.png";
+    //         // } else if (data.hasOwnProperty("icon") === true) {
+    //         //   this.iconImgurl = this.imgUrl + data.icon;
+    //         // }
+    //         // if (data.hasOwnProperty("name") === false) {
+    //         //   this.name = "未填写姓名";
+    //         // } else if (data.hasOwnProperty("name") === true) {
+    //         //   this.name = data.name;
+    //         // }
+    //         var s1 = data.vipDeadTime;
+    //         s1 = new Date(s1.replace(/-/g, "/"));
+    //         var s2 = new Date(); // 当前日期
+    //         var days = s1.getTime() - s2.getTime();
+    //         var time = parseInt(days / (1000 * 60 * 60 * 24));
+    //         if (time < 0) {
+    //           this.dataNumber = "您的vip已过期,请尽快充值";
+    //         } else {
+    //           this.dataNumber = `有效期:${time}天`;
+    //         }
+    //       }
+    //     },
+    //     () => {
+    //       this.$message.error("请求错误");
+    //     }
+    //   );
+    // },
+    logout() {
+      this.$confirm("你确定要退出此账号吗, 是否继续?", "退出登录", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          dataService.logout().then(
+            res => {
+              // debugger;
+              let result = res.data;
+              let code = result.code;
+              if (code === 200) {
+                this.$message.success("退出成功");
+              }
+              this.$router.replace({
+                name: "login"
+              });
+              localStorage.removeItem("vipDay");
+              localStorage.removeItem("studentNo");
+              localStorage.removeItem("token");
+            },
+            () => {
+              this.$router.replace({
+                name: "login"
+              });
+            }
+          );
+        })
+        .catch(() => {
+          // this.$message({
+          //   type: "info",
+          //   message: "已取消"
+          // });
+        });
+    },
+    open() {
+      this.payDialogShow = true;
+    },
+    paySuccess() {
+      let day = localStorage.getItem("vipDay") || 0;
+      let text = "";
+      if (day <= 0) {
+        text = "vip已过期";
+      } else {
+        text = "vip剩余：" + day + "天";
+      }
+      this.vipDay = text;
+    }
+  }
+};
+</script>
+<style lang="scss"  >
+.person-center {
+  width: 100%;
+  height: 100%;
+  // position: relative;
+  overflow: hidden;
+  .correct {
+    border: 2px solid #0f7cef;
+  }
+  .nav-header .nav-header-left {
+    display: none;
+  }
+  .logout {
+    height: 100%;
+    padding: 0 10px;
+    cursor: pointer;
+    margin-right: 25px;
+    i {
+      font-size: 35px;
+      color: #f9dfdd;
+      &:hover {
+        color: lightcoral;
+      }
+    }
+  }
+  .person_container {
+    position: absolute;
+    top: 56px;
+    right: 0;
+    left: 0;
+    bottom: 56px;
+    overflow: auto;
+    background: #f9f9f9;
+    .person-img {
+      background: #fff;
+      width: 100%;
+      height: 120px;
+      padding-top: 10px;
+      min-width: 750px;
+      .headerImg {
+        width: 120px;
+        height: 120px;
+        overflow: hidden;
+        margin-left: 50px;
+        cursor: pointer;
+        border: 1px solid #c0c4cc;
+        border-radius: 50%;
+        img {
+          width: 100%;
+          vertical-align: middle;
+        }
+      }
+      .right-name {
+        position: absolute;
+        top: -30px;
+        left: 137px;
+        height: 100px;
+        line-height: 50px;
+        margin-left: 60px;
+        margin-top: 55px;
+        color: #909399;
+        font-size: 14px;
+      }
+    }
+    .person-bottom {
+      // width: 80%;
+      // margin: 60px;
+
+      padding: 60px;
+      min-width: 750px;
+      box-sizing: border-box;
+      li {
+        list-style: none;
+        display: inline-block;
+        width: 100px;
+        height: 180px;
+        cursor: pointer;
+        text-align: center;
+        margin: 20px;
+        .img-down {
+          width: 100px;
+          height: 100px;
+          img {
+            width: 100%;
+          }
+        }
+      }
+    }
+  }
+}
+.change {
+  font-size: 30px;
+  margin-left: 12px;
+  color: red;
+}
+.date {
+  font-size: 30px;
+  position: relative;
+  top: 6px;
+  margin-left: 14px;
+  margin-right: 5px;
+  color: green;
+}
+</style>

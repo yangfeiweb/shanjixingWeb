@@ -1,0 +1,154 @@
+<template>
+  <div class="course-center cnfont">
+    <div class="bookTop">
+      <nav-header :showBack="false">
+        <div slot="title">课程中心</div>
+      </nav-header>
+      <el-tabs v-model="activeName" type="border-card" @tab-click="handleClick">
+        <el-tab-pane :label=item.label v-for="item in bookList" :key="item.value" :name=item.value>
+        </el-tab-pane>
+      </el-tabs>
+    </div>
+
+    <ul style="list-style:none;margin-top:150px">
+      <li v-for="item in list" :key="item.value" @click="showDialog" style="float:left;width:150px;height:180px;padding:20px">
+        <img :src=url+item.coverImgUrl class="bookImg">
+        <div>{{item.name}}</div>
+      </li>
+    </ul>
+    <!-- <el-tabs v-model="activeName" @tab-click="handleClick" type="border-card">
+      <el-tab-pane :label=item v-for="item in bookList" :key="item.value" :name=item>
+        <ul style="list-style:none">
+          <li v-for="item in list" :key="item.value" style="float:left;width:150px;height:180px;padding:20px">
+
+            <img :src=url+item.coverImgUrl class="bookImg">
+            <div>{{item.name}}</div>
+          </li>
+        </ul>
+      </el-tab-pane>
+    </el-tabs> -->
+
+  </div>
+</template>
+
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { ResourcePath } from "../../service/urlConfig";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      url: ResourcePath,
+      page: 0,
+      activeName: "FREE",
+      bookList: [],
+      bookSort: "",
+      bookType: "",
+      list: []
+    };
+  },
+  mounted() {
+    this.getBookList();
+    this.bookType = "FREE";
+    this.getList();
+  },
+  methods: {
+    showDialog() {},
+    handleClick(tab, event, activeName) {
+      console.log(this.activeName);
+      this.bookType = this.activeName;
+      this.getList();
+    },
+    getList() {
+      dataService.getBookList(0, 20, this.bookSort, this.bookType).then(res => {
+        let result = res.data;
+        let code = result.code;
+        let data = result.data;
+        let msg = result.msg;
+        if (code == 200) {
+          this.list = data.content;
+          console.log(this.list);
+        }
+      });
+    },
+    getBookList() {
+      dataService.getBookList(0, 160, "", "").then(res => {
+        var bookList = [];
+        for (var i = 0; i < res.data.data.content.length; i++) {
+          bookList.push(res.data.data.content[i].bookType);
+        }
+        Array.prototype.distinct = function() {
+          var arr = this,
+            i,
+            j,
+            len = arr.length;
+          for (i = 0; i < len; i++) {
+            for (j = i + 1; j < len; j++) {
+              if (arr[i] == arr[j]) {
+                arr.splice(j, 1);
+                len--;
+                j--;
+              }
+            }
+          }
+          return arr;
+        };
+        var a = bookList;
+        this.bookList = a.distinct();
+
+        console.log(this.bookList);
+        this.bookList = [
+          { label: "免费", value: "FREE" },
+          { label: "幼儿", value: "BABY" },
+          { label: "小学", value: "PRIMARY" },
+          { label: "中学", value: "MIDDLE" },
+          { label: "高中", value: "HIGH" },
+          { label: "大学", value: "COLLEGE" },
+          { label: "出国", value: "GO_ABROAD" },
+          { label: "通用", value: "COMMON" }
+        ];
+      });
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.course-center {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+    color: #fff;
+    background: #409eff;
+    border-right-color: #dcdfe6;
+    border-left-color: #dcdfe6;
+  }
+  .el-tab-pane div {
+    color: #409eff;
+    font-size: 14px;
+  }
+  .bookImg {
+    width: 150px;
+    height: 150px;
+  }
+  .bookTop {
+    position: static;
+    left: 0;
+    box-sizing: border-box;
+    width: 100%;
+    // position: fixed;
+    // width: 100%;
+  }
+  .el-tabs--border-card > .el-tabs__content {
+    padding: 0;
+  }
+}
+</style>
+
+

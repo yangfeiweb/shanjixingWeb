@@ -1,0 +1,63 @@
+import Vue from "vue";
+import Router from "vue-router";
+
+Vue.use(Router);
+// 登录
+import login from "@/pages/login.vue";
+// 注册
+import regist from "@/pages/regist.vue";
+// 忘记密码
+import forgetPwd from "@/pages/forgetPwd.vue";
+// 词汇测试
+import wordTest from "@/pages/wordTest.vue";
+// 课程中心、
+import courseCenter from "@/pages/courseCenter/courseCenter.vue";
+// 学习中心
+import learnCenter from "@/pages/learnCenter/learnCenter.vue";
+//生词本
+import unKnowWord from "@/pages/unKnowWord.vue";
+//生词详情
+import unKnowDetail from '@/pages/unKnowDetail.vue'
+
+export default new Router({
+    routes: [{
+            path: '/',
+            name: 'login',
+            component: login
+        },
+        {
+            path: '/regist',
+            name: 'regist',
+            component: regist
+        },
+        {
+            path: '/forgetPwd',
+            name: 'forgetPwd',
+            component: forgetPwd
+        },
+        {
+            path: '/wordTest',
+            name: 'wordTest',
+            component: wordTest
+        },
+        {
+            path: '/unKnowWord',
+            name: 'unKnowWord',
+            component: unKnowWord
+        },
+        {
+            path: "/courseCenter",
+            name: "courseCenter",
+            component: courseCenter
+        },
+        {
+            path: "/learnCenter",
+            name: "learnCenter",
+            component: learnCenter
+        }, {
+            path: "/unKnowDetail",
+            name: "unKnowDetail",
+            component: unKnowDetail
+        }
+    ]
+});

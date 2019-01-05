@@ -1,0 +1,227 @@
+<template>
+  <div class="unKnowDetail clear">
+    <div class="header">
+      <nav-header>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">{{bookName}}</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="book-container">
+      <vue-better-scroll style="height:100%" class="wrapper" ref="scroll">
+        <ul class="book-list" v-for="(item,index) in dataList" :key='index'>
+          <li class="list-item">
+            <p class="word">
+              <span class="word-name">{{item.content1}}</span>
+              <span>{{item.content2}}</span>
+            </p>
+            <div>
+              <p>{{item.means[0].chinese}}</p>
+              <p>{{item.means[1].english}}</p>
+            </div>
+            <ul v-for="(dish,idx) in item.examples" :key="idx" style="listStyle:none">
+              <li class="case-item">{{dish.case}}</li>
+            </ul>
+          </li>
+        </ul>
+      </vue-better-scroll>
+    </div>
+  </div>
+</template>
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import utility from "@/utility/utility";
+import index from "vue";
+import dataService from "@/service/index";
+
+export default {
+  data() {
+    return {
+      bookName:"",
+      dataList2: [
+        {
+          content1: "point1",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point2",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point3",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point4",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point5",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point6",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point7",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point8",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point9",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        },
+        {
+          content1: "point10",
+          content2: "[pɔɪnt]",
+          content3:
+            "【⇔】power point（英）=outlet〔socket〕（美）（电源插座)；nib（英）=pen point（美）（笔尖)；mark（英）=point（美）<br />【中】n.尖；点；要点 v.指向；指<br />【英】n.sharp or tapered end of sth；tip",
+          content4:
+            "【例】the point of a pencil 铅笔尖<br />【口】Would you get to the point?你能把要点说得再清楚点儿吗?<br />【例】In this point，I join with you.在这一点上，我与你意见一致。<br />【例】I think that you are missing the point here.我认为你偏离了要点。"
+        }
+      ]
+    };
+  },
+  mounted() {
+    console.log(this.$route.params.item,"this.params.item")
+    this.bookName=this.$route.params.item.name
+    this.getWordList();
+    console.log("---测试用--index", this.$route.params.index);
+    this.$refs.scroll.forceUpdate(true);
+  },
+  methods: {
+    getWordList() {
+      dataService.unKnownWord(0, 200,this.$route.params.item.bookNo,"DEFAULT").then(
+        res => {
+          let result = res.data;
+          let data = result.data;
+          let msg = result.msg;
+          let code = result.code;
+          if (code == 200) {
+            this.dataList2 = data.content;
+           
+          } else {
+            this.$message.error(msg);
+          }
+        },
+        err => {
+          this.$message.error("请求错误");
+        }
+      );
+    }
+  },
+  computed: {
+    dataList: function() {
+      let words = _.cloneDeep(this.dataList2 || []);
+      words.forEach(e => {
+        let mean = e.content3.split("<br />");
+        let example = e.content4.split("<br />");
+        // console.log("---------mean",mean);
+        // console.log("---------example",example);
+        e.means = [{ chinese: mean[1] }, { english: mean[2] }];
+        e.examples = [];
+        for (let i = 0; i < example.length; i++) {
+          e.examples.push({ case: example[i] });
+        }
+      });
+      console.log("---------words", words);
+      return words;
+    }
+  },
+  components: {
+    navHeader,
+    VueBetterScroll
+  }
+};
+</script>
+<style lang="scss">
+.unKnowDetail {
+  width: 100%;
+  height: 100%;
+  .book-container {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow: auto;
+      .book-list {
+        width: 60%;
+        list-style: none;
+        margin: 0 auto;
+        padding: 0 30px;
+        .list-item {
+          min-height: 120px;
+          color: #767676;
+          border: 2px solid #ddd;
+          padding: 20px 10px;
+          margin-bottom: 15px;
+          border-radius: 5px;
+          background: #ffffff;
+          box-shadow: #c2c1c6 1px 2px 1px 2px;
+          .word {
+            margin-bottom: 30px;
+            .word-name {
+              font-size: 24px;
+              color: #22aefe;
+              margin-right: 10px;
+            }
+          }
+          .case-item {
+            line-height: 24px;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

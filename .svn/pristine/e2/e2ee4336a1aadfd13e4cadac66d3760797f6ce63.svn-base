@@ -1,0 +1,75 @@
+<template>
+    <div class='learnFooter'>
+           <p v-show="fonterLearnShow" class="learnP">
+                本组进度 ( {{learnPlan.currentPlan}} -
+                <i class="haveLearned">{{learnPlan.haveLearned}}</i>)
+                生词 ( <i class="newWord">{{learnPlan.newWord}}</i> )
+                课程总进度 ( {{learnPlan.sumPlan}} ) 总单词 ( 7 )
+           </p>
+           <p v-show="fonterGoOverShow" class="goOver">
+                <i class='capacity'> 智能复习中... </i> ( {{goOverPlan.currentPlan}} - <i class="haveLearned">{{goOverPlan.haveLearned}}</i>  )
+           </p>
+    </div>
+</template>
+<script>
+export default {
+    components: {
+    },
+    data(){
+        return{
+            fonterLearnShow:true,
+            fonterGoOverShow:false,
+            learnPlan:{
+                currentPlan:'20',
+                haveLearned:"1",
+                newWord:"7",
+                sumPlan:'41',
+                sumNewword:'10'
+            },
+            goOverPlan:{
+                currentPlan:'20',
+                haveLearned:"1",
+            }
+        }
+    },
+    methods:{
+
+    },
+    mounted(){
+
+    },
+    watch:{
+
+    },
+    computed: {
+
+    },
+};
+</script>
+
+<style lang="scss" scoped>
+.learnFooter{
+    position:fixed;
+    left:0px;
+    bottom:0px;
+    height:40px;
+    line-height:40px;
+    background: #707071;
+    width:100%;
+    z-index:30;
+    text-align:center;
+    color:#fff;
+    i{
+        font-style: normal;
+    }
+    .haveLearned{
+        color:#5CACDF;
+    }
+    .newWord{
+        color: #DC7475;
+    }
+    .capacity{
+        color:#FDC009;
+    }
+}
+</style>

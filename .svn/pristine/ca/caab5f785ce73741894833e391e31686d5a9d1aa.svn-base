@@ -1,0 +1,451 @@
+<template>
+	<div class="learnIndex"> 
+        <div class="header">
+            <nav-header>
+                <div slot="title" class="shopping-title">
+                <div class='areas'>
+                    <span class="area-item">{{title}}</span>
+                </div>
+                </div>
+            </nav-header>
+        </div>
+        <div class="learnMain">
+            <sidebar>
+            </sidebar>
+            <el-tabs class="elTabs" v-model="trackListValue" type="card" @tab-click="clickTab">
+                <el-tab-pane
+                    v-for="(item, index) in trackList"
+                    :key='index'
+                    :label="item">
+                </el-tab-pane>
+            </el-tabs>
+            <el-main class="main">
+                <div class="mainDiv">
+                    <div class="wordDiv">
+                        <div class="wordLeft">
+                            <p class="mainWord">{{learnList.wordName}}</p>
+                            <p class="mainP mainSoundmark">{{learnList.soundmark}}</p>
+                            <p v-show='!answerShow' class="mainP mainSentence">{{learnList.sentence}}</p>
+                            <p v-show='answerShow' class="mainP mainSentence">【 中 】{{learnList.chinese}}</p>
+                            <p v-show='answerShow' class="mainP mainSentence">【 英 】{{learnList.english}}</p>
+                        </div>
+                        <div class="wordRight">
+                            <img :src="learnList.imgUrl" alt="">
+                        </div>
+                    </div>
+                    <div class="answerBtn">
+                        <el-button v-show="successaAnswerShow" type="success" @click="correct">
+                            <i class="el-icon-success"></i>
+                            正确/认识
+                        </el-button>
+                        <el-button :type="btnType" :plain="iconClass==='el-icon-back'" @click="getAnswer">
+                            <i :class="iconClass"></i>
+                            {{btnName}}
+                        </el-button>
+                    </div>
+                    <div class="answerMain" v-show='answerShow'>
+                        <div class='listenDiv'>
+                            <p class="listen">
+                                {{learnList.listen1}}
+                            </p>
+                            <p class="listen">
+                                {{learnList.listen2}}
+                            </p>
+                            <p class="listen">
+                                {{learnList.listen3}}
+                            </p>
+                            <p class="listen">
+                                {{learnList.listen4}}
+                            </p>
+                        </div>
+                        <div class='listenDiv borderBotttom'>
+                            <p class='listen'>
+                                {{learnList.unison}}
+                            </p>
+                             <p class='listen'>
+                                {{learnList.analysis}}
+                            </p>
+                             <p class='listen'>
+                                {{learnList.match}}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </el-main>
+            <div class="asideRight">
+                <div class="iconDiv">
+                    <i @click="getWordList" class="el-icon-tickets wordList"></i>
+                    <i @click="getAudio" class="el-icon-tickets brainWave"></i>
+                </div>
+            </div>
+        </div>
+        <el-dialog
+            title="学习提示"
+            :visible.sync="colcumnShow"
+            width="30%"
+            :show-close='false'
+            center>
+            <span>{{dialog.warnContent}}</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="test">是</el-button>
+                <el-button @click="colcumnShow=false">否</el-button>
+            </span>
+        </el-dialog>
+        <el-dialog
+            title="@脑波记忆"
+            :visible.sync="dialog.audioDialog"
+            width="30%"
+            :show-close='false'
+            center>
+            <p>开启@脑波记忆,进入右脑状态</p>
+            <p>让大脑清醒且轻松,注意力更集中!</p>
+            <p>
+                <i @click="getLast" class="el-icon-caret-left"></i>
+                <i @click='playBack' class="el-icon-sort"></i>
+                <i @click="getNext" class="el-icon-caret-right"></i>
+            </p>
+            <audio :src="dialog.audioUrl" autobuffer loop controls></audio>
+        </el-dialog>
+        <fonter></fonter>
+        <wordList-dialog :show.sync='wordListShow'>
+        </wordList-dialog>
+	</div>
+</template>
+<script>
+import dataService from "@/service/index";
+import navHeader from "@/components/navHeader";
+import fonter from "./learnFonter";
+import sidebar from './learnSidebar'
+import wordListDialog from './wordListDialog'
+export default {
+  components: {
+    navHeader,
+    fonter,
+    sidebar,
+    wordListDialog
+  },
+  data() {
+        return {
+            wordListShow:false,
+            colcumnShow:false,
+            dialog:{
+                warnContent:"是否要进行章节前测试?",
+                learnWarnDialog:false,
+                audioDialog:false,
+                audioUrl:'../../assets/audio/1.mp3'
+            },
+            title:'人教版(一单元)',
+            num:0,
+            trackList:[],
+            trackListValue:'',
+            learnList:{
+                wordName:"make1",
+                soundmark:'[`maIn@]',
+                sentence:'Makes sense.',
+                chinese:'使得；进行；布置，准备，整理；制造；认为；获得；形成；安排；引起；构成',
+                english:'pp: made   pt: made ',
+                imgUrl:"http://d.5857.com/dybh_140526/004.jpg",
+                listen1:'【例】the point of a pencil 铅笔尖',
+                listen2:'【例】Would you get to the point?你能把要点说得再清楚点儿吗?',
+                listen3:'【例】In this point，I join with you.在这一点上，我与你意见一致。',
+                listen4:'【例】I think that you are missing the point here.我认为你偏离了要点。',
+                unison:'【同音】especially in the east and southeast. 尤其在东部和东南部。',
+                analysis:'【辨析】discriminationanalysisdiscriminatedifferentiation and analysis',
+                match:'【搭配】Match play 比洞赛对抗赛以各个洞位为单位而在竞赛玩法'
+            },
+            btnName:"答案",
+            iconClass:'el-icon-question',
+            btnType:'primary',
+            successBtnShow:false,
+            answerShow:false,
+            successaAnswerShow:false,
+            bookNo:""
+        };
+  },
+  watch:{
+  },
+  mounted() {
+      this.getBookReviewWords()
+  },
+  computed: {
+
+  },
+  methods: {
+    //   点击脑波暂停
+    playBack(){
+        console.log('暂停')
+    },
+    // 上一首
+    getLast(){
+        console.log('上一首')
+    },
+    // 下一首
+    getNext(){
+        console.log('下一首')
+    },
+    //   点击脑波
+    getAudio(){
+        console.log('你好')
+        this.dialog.audioDialog=true
+    },
+    //   点击tab
+    clickTab(e){
+        console.log('点击tab')
+        console.log(e)
+        console.log(this.trackListValue)
+    },
+    //   点击单词列表
+    getWordList(){
+        this.wordListShow=true
+    },
+    //   点击确定要进行章节测试
+    test(){
+        this.dialog.learnWarnDialog=false
+        console.log('测试')
+        this.$router.push("/wordTest")
+    },
+    //   答对啦
+    correct(){
+        console.log('正确')
+        // 用户答对啦之后,切换到下一个单词
+        this.successaAnswerShow=false
+        this.answerShow=false
+        this.iconClass='el-icon-question'
+        this.btnName='答案'
+        this.btnType='primary'
+    },
+    //   点击答案按钮，获取答案
+    getAnswer(){
+        console.log('获取答案')
+        if(this.btnName==='答案'){
+            this.answerShow=true
+            this.successaAnswerShow=true
+            this.iconClass='el-icon-error'
+            this.btnName='错误/不认识'
+            this.btnType='danger'
+        }else if(this.btnName==='错误/不认识'){
+            this.successaAnswerShow=false
+            this.answerShow=true
+            this.iconClass='el-icon-back'
+            this.btnName='下一个'
+            this.btnType='danger'
+            this.trackList.push(this.learnList.wordName+'1')
+            this.num=this.trackList.length-1
+        }else{
+            this.successaAnswerShow=false
+            this.answerShow=false
+            this.iconClass='el-icon-question'
+            this.btnName='答案'
+            this.btnType='primary'
+        }
+    },
+    getBookReviewWords() {
+      dataService.getBookReviewWords(0, 20, 'DEFAULT', this.bookNo).then(res => {
+        let result = res.data;
+        let code = result.code;
+        let data = result.data;
+        let msg = result.msg;
+        if (code == 200) {
+            console.log(data)
+        }else{
+
+        }
+      });
+    },
+  }
+};
+</script>
+<style lang="scss">
+.learnIndex{
+     background-color: #EFEFF4;
+     height:100%;
+     .el-dialog {
+        margin-top:37vh  !important;
+        min-width: 500px;
+        border-radius:10px;
+        .el-dialog__header{
+            border-top-left-radius:8px;
+            border-top-right-radius:8px;
+            background-color:#56BDFF;
+            .el-dialog__title{
+                color:#fff;
+                font-size:20px;
+            }
+        }
+        .el-dialog__body{
+            text-align:center;
+        }
+        .el-dialog__footer{
+            .el-button{
+                padding:10px 50px;
+                border:none;
+                border-radius:8px;
+                box-shadow: 0px 2px 5px #BABABA;
+                -moz-box-shadow:  0px 2px 5px #BABABA;
+            }
+            .el-button--primary{
+                background-color:#56BDFF;
+            }
+            .el-button--default{
+                background-color:#F4F4F4;
+            }
+        }
+     }
+    .learnMain{
+        position: absolute;
+        height:100%;
+        width:100%;
+        top:0px;
+        color: #7D8287;
+        .asideRight{
+            position: absolute;
+            height:100%;
+            top:0px;
+            right:0px;
+            width:80px;
+            text-align: center;
+            .iconDiv{
+                padding-top: 160px;
+                i{
+                    display: block;
+                    font-size: 50px;
+                    width:100%;
+                    background-color: #F4F4F4;
+                    height:150px;
+                    line-height: 150px;
+                }
+                .brainWave{
+                    margin-top: 20px;
+                }
+            }
+        }
+        .elTabs{
+            background-color: #868686;
+            position: absolute;
+            padding: 69px 0px 40px 0px;
+            width:100%;
+            height:0px;
+            overflow-y: hidden;
+            // overflow-x: scroll;
+            .el-tabs__header{
+                padding-left: 250px;
+                margin:0px;
+                margin-top:13px;
+                border-bottom: 0;
+                .el-tabs__nav{
+                    border:none;
+                    .el-tabs__item{
+                        color: #fff;
+                        height:30px;
+                        line-height: 30px;
+                        border-left:none;
+                        border-radius: 5px 5px 0px 0px;
+                    }
+                    .is-active{
+                        background-color: #fff;
+                        color:#57BDFF;
+                    }
+                }
+            }
+        }
+        .main{
+            width:100%;
+            height:100%;
+            position: absolute;
+            overflow: hidden;
+            top:0px;
+            left:0px;
+            padding: 130px 100px 30px 270px;
+            .mainDiv::-webkit-scrollbar{
+                width:0px;
+            }
+            .mainDiv::-webkit-scrollbar-thumb{
+                background-color:#c2c2c2;
+            }
+            .mainDiv{
+                width:100%;
+                overflow-y: auto;
+                height: 100%;
+                .wordDiv{
+                   background-color: #fff;
+                   border-radius: 25px;
+                   padding: 10px 20px;
+                   height:200px;
+                   position:relative;
+                   .wordLeft{
+                       display: inline-block;
+                       width:70%;
+                       height:100%;
+                       .mainWord{
+                           font-size: 50px;
+                           color:#57BDFF;
+                           font-weight: normal;
+                           margin-bottom: 10px;
+                       }
+                       .mainP{
+                           line-height: 30px;
+                           color:#868686;
+                           font-size: 16px;
+                           font-weight: normal;
+                       }
+                   }
+                   .wordRight{
+                        display: inline-block;
+                        width:200px;
+                        height:100%;
+                        position:absolute;
+                        top:20px;
+                        right:0px;
+                        img{
+                            vertical-align:middle;
+                            width:180px;
+                            height:180px;
+                            border-radius: 20px;
+                        }
+                   }
+                }
+                .answerBtn{
+                    width:100%;
+                    position: relative;
+                    height: 60px;
+                    text-align: right;
+                    margin-top: 13px;
+                    .el-button{
+                        padding: 10px 30px;
+                        font-size: 24px;
+                        border-radius: 12px;
+                        .el-icon-back{
+                            transform: rotate(180deg);
+                            font-weight: bold;
+                        }
+                    }
+                    .el-button--success{
+                        background-color: #0EE573;
+                        border-color: #0EE573;
+                    }
+                    .el-button--success:focus, .el-button--success:hover{
+                        background-color: #0EE573;
+                        border-color: #0EE573;
+                    }
+                }
+                .answerMain{
+                    background-color: #fff;
+                    border-radius: 25px;
+                    padding: 20px 20px;
+                    color:#7D7D7D;
+                    font-size:16px;
+                    .listenDiv{
+                        border-bottom:1px solid #D3D3D3;
+                        .listen{
+                            line-height:35px;
+                        }
+                    }
+                    .borderBotttom{
+                        border-bottom:none;
+                    }
+                }
+            }
+        }
+    }
+}
+</style>

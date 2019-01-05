@@ -1,0 +1,177 @@
+<template>
+	<div class="examEntry clear cnfont"> 
+    <nav-header :showBack='false'>
+      <span slot="title">词汇量测试</span>
+    </nav-header>
+    <div class="pic-Container">
+      <p class="examEntry-title">英语单词汇量测试</p>
+      <el-form ref="form" :model="form" class="pic-list">
+        <el-form-item>
+          <el-radio-group v-model="form.resource">
+            <el-radio-button label="综合测试">
+              <i class="iconfont icon-xt_weiruan tuBiao"></i>
+              综合测试
+            </el-radio-button>
+            <el-radio-button label="小学">
+              <i class="iconfont icon-yonghu tuBiao"></i>
+              小学
+            </el-radio-button>
+            <el-radio-button label="中学">
+              <i class="iconfont icon-ai-users tuBiao"></i>
+              中学
+            </el-radio-button>
+            <el-radio-button label="高中">
+              <i class="iconfont icon-msnui-users tuBiao"></i>
+              高中
+            </el-radio-button>
+            <el-radio-button label="大学">
+              <i class="iconfont icon-book tuBiao"></i>
+              大学
+            </el-radio-button>
+            <el-radio-button label="出国">
+              <i class="iconfont icon-feiji tuBiao"></i>
+              出国
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <el-button type="primary" class="examBtn" @click="submitForm(form)">开始测试</el-button>
+    </div>
+	</div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+
+export default {
+  mounted() {
+
+  },
+  data() {
+    return {
+      form: {
+        resource: "综合测试"
+      },
+      grade: "",
+      typeScore: 0,
+      max: 0,
+      min: 0
+    };
+  },
+
+  methods: {
+    submitForm(row) {
+      console.log("---------row", row);
+      switch (row.resource) {
+        case "综合测试":
+          this.grade = "SUPPORT_GRADE1";
+          this.typeScore = 211;
+          this.max = 8500;
+          this.min = 6500;
+          break;
+        case "小学":
+          this.grade = "SUPPORT_GRADE2";
+          this.typeScore = 29;
+          this.max = 1000;
+          this.min = 800;
+          break;
+        case "中学":
+          this.grade = "SUPPORT_GRADE3";
+          this.typeScore = 57;
+          this.max = 2500;
+          this.min = 1700;
+          break;
+        case "高中":
+          this.grade = "SUPPORT_GRADE7";
+          this.typeScore = 77;
+          this.max = 4000;
+          this.min = 3500;
+          break;
+        case "大学":
+          this.grade = "SUPPORT_GRADE9";
+          this.typeScore = 113;
+          this.max = 6000;
+          this.min = 4000;
+          break;
+        case "出国":
+          this.grade = "SUPPORT_GRADE10";
+          this.typeScore = 189;
+          this.max = 6000;
+          this.min = 4500;
+          break;
+      }
+      console.log("-------this.grade", this.grade);
+      console.log("-------this.typeScore", this.typeScore);
+      this.$router.push({
+        name: "wordExam",
+        params: {
+          grade: this.grade,
+          typeScore: this.typeScore,
+          max: this.max,
+          min: this.max,
+          examType: "WORD"
+        }
+      });
+    }
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.examEntry {
+  width: 100%;
+  height: 100%;
+  .clear {
+    content: "";
+    display: block;
+    clear: both;
+  }
+  .pic-Container {
+    max-width:700px;
+    width:600px;
+    margin: 140px auto 0;
+    text-align: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 80px;
+    overflow: auto;
+
+    .examEntry-title {
+      font-size: 28px;
+      color: #56bdff;
+    }
+    .pic-list {
+      width: 100%;
+      margin-top: 80px;
+      .el-radio__label {
+        font-size: 18px;
+      }
+      .el-radio-button {
+        margin: 8px;
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .el-radio-button__inner {
+        width: 180px;
+        line-height: 35px;
+        font-size: 18px;
+        border: none;
+      }
+      .tuBiao {
+        font-size: 22px;
+      }
+    }
+  }
+  .examBtn {
+    width: 200px;
+    height: 50px;
+    margin-top: 80px;
+    font-size: 18px;
+    border-radius: 5px;
+  }
+}
+</style>

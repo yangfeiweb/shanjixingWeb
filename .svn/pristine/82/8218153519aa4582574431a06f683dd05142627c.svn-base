@@ -1,0 +1,232 @@
+<template>
+  <div class="learn-center cnfont">
+    <nav-header :showBack="false">
+      <span slot="title">学习中心</span>
+    </nav-header>
+    <div class="learn-container">
+      <ul v-loading="learnLoading" element-loading-text="拼命加载中">
+        <li class="learn-box" v-for="(item,index) in datalist" :key='index'>
+          <div class="box-left">
+            <img :src='url+item.coverImgUrl' alt="">
+            <div class="bmbox" @click="open(item)" title="删除课本">
+              <i class="iconfont icon-shanchu deleteBook"></i>
+            </div>
+          </div>
+          <div class="box-right">
+            <div class="bookname" :title="item.name">{{item.name}}</div>
+            <div>
+              <el-progress :text-inside="true" :stroke-width="14" :percentage='Math.floor((item.totalWordLearns/item.words)*100)'></el-progress>
+            </div>
+            <div>
+              <el-button v-if="item.totalWordLearns===0&&learnBtn===true" type="primary" @click="learnStart(item)">开始学习</el-button>
+              <el-button type="success" v-if="item.totalWordLearns>0&&learnBtn===true" @click="learnStart(item)">继续学习</el-button>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <pay-dialog :show.sync="payDialogShow"></pay-dialog>
+  </div>
+</template>
+
+<script>
+import payDialog from "@/components/payDialog";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { ResourcePath } from "../../service/urlConfig";
+
+export default {
+  components: {
+    navHeader,
+    payDialog
+  },
+  data() {
+    return {
+      payDialogShow: false,
+      url: ResourcePath,
+      learnBtn: true,
+      pppppp: false,
+      datalist: [],
+      bookNo: "",
+      status: "",
+      showExam: true,
+      learnLoading: false
+    };
+  },
+  mounted() {
+    this.getDownBooklist();
+  },
+
+  methods: {
+    learnStart(val) {
+      console.log(val.bookType);
+
+      if (val.bookType !== "FREE" || localStorage.getItem("vipDay") === 0) {
+        this.payDialogShow = true;
+        this.$message.error("Vip已过期，请充值");
+      } else {
+        this.$router.push({
+          name: "learning",
+          params: {
+            bookInfo: val
+          }
+        });
+      }
+    },
+    getDownBooklist() {
+      this.datalist = [];
+      this.learnLoading = true;
+      dataService.getDownBookList(0, 200).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          if (code === 200) {
+            this.datalist = data.content;
+            this.learnLoading = false;
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+          this.learnLoading = false;
+        }
+      );
+    },
+    open(item) {
+      this.$confirm(`你确定想要删除${item.name}吗, 是否继续?`, "删除", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          console.log(item, "-----------");
+          this.bookNo = item.bookNo;
+          this.status = "DELETE";
+          let bookname = item.name;
+          dataService.downBook(this.bookNo, this.status).then(
+            res => {
+              let result = res.data;
+              let code = result.code;
+              if (code === 200) {
+                this.$message.success(`[  ${bookname}  ]    已成功删除`);
+                this.getDownBooklist();
+              }
+            },
+            () => {
+              this.$message.error("请求错误");
+            }
+          );
+        })
+        .catch(() => {
+          // this.$message({
+          //   type: "info",
+          //   message: "已取消删除"
+          // });
+        });
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.learn-center {
+  width: 100%;
+  height: 100%;
+  .learn-container {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 55px;
+    padding: 10px;
+    overflow: auto;
+    ul {
+      list-style: none;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      min-width: 1000px;
+      .learn-box {
+        min-height: 120px;
+        color: #767676;
+        border: 1px solid #ddd;
+        padding: 10px 10px;
+        margin: 10px 5px;
+        border-radius: 5px;
+        box-shadow: #c2c1c6 2px 1px 7px 0px;
+        .box-left {
+          float: left;
+          width: 110px;
+          height: 130px;
+          line-height: 130px;
+          position: relative;
+          img {
+            width: 100%;
+            vertical-align: middle;
+          }
+          .bmbox {
+            width: 110px;
+            height: 40px;
+            background: rgba($color: #000000, $alpha: 0.5);
+            position: absolute;
+            bottom: 10px;
+            left: 0px;
+            display: none;
+            font: 12px/30px "宋体";
+            color: white;
+            text-align: center;
+            cursor: pointer;
+          }
+        }
+        .box-left:hover .bmbox {
+          width: 110px;
+          height: 40px;
+          background: rgba($color: #000000, $alpha: 0.5);
+          position: absolute;
+          bottom: 10px;
+          left: 0px;
+          display: block;
+          font: 12px/30px "宋体";
+          color: white;
+          text-align: center;
+          .deleteBook {
+            font-size: 30px;
+            position: absolute;
+            bottom: 0px;
+            left: 35%;
+          }
+        }
+        .box-right {
+          float: left;
+          height: 120px;
+          margin-left: 20px;
+          .bookname {
+            width: 170px;
+            height: 25px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .el-progress {
+            position: relative;
+            line-height: 3;
+          }
+          .el-progress-bar__outer {
+            background-color: #e4e7ed;
+          }
+          .el-progress-bar__innerText {
+            color: #000000;
+            font-size: 10px;
+          }
+          .el-button {
+            padding: 15px 40px;
+          }
+          div {
+            padding: 0;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

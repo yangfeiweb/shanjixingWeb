@@ -1,0 +1,31 @@
+import VueResource from 'vue-resource'
+import Vue from 'vue'
+import router from '@/router/index'
+Vue.use(VueResource)
+
+export default function(url = '', params = {}, type = 'GET') {
+    let result = setRequest(url, params, type)
+    result.then(res => {
+        let resultData = res.data
+        let code = resultData.code
+        if (code === 401) {
+            router.push({ name: 'login' })
+        }
+    }, err => {
+        console.log('-----err', err)
+    })
+    return result
+}
+
+function setRequest(url, params, type) {
+    let result
+    if (type.toUpperCase() === 'GET') {
+        result = Vue.http.get(url, { params: params, timeout: 60000 })
+    } else if (type.toUpperCase() === 'POST') {
+        result = Vue.http.post(url, params, {
+            emulateJSON: true,
+            timeout: 60000
+        })
+    }
+    return result
+}

@@ -1,0 +1,22 @@
+import _ from "lodash";
+import course from "./pageUrl/course";
+import learn from "./pageUrl/learn";
+import auth from "./pageUrl/auth";
+import person from "./pageUrl/person";
+import exam from "./pageUrl/exam";
+
+export let apiRoot = "http://192.168.0.22:13001/api/";
+export const ResourcePath = "http://res.shanjixing.com";
+export const imgPath = "http://192.168.0.22:8888/sjx/public/quick/img";
+export const audioPath = "http://192.168.0.22:8888/sjx/public/quick/v";
+
+if (process.env.NODE_ENV === "development") {
+  apiRoot = "/api";
+}
+export default _.merge(
+  course(apiRoot),
+  learn(apiRoot),
+  auth(apiRoot),
+  person(apiRoot),
+  exam(apiRoot)
+);

@@ -1,0 +1,183 @@
+<template>
+  <div class="exam-details-base">
+    <div class="details-box">
+      <div class="resultDetail-top">
+        <p>测试时间：{{data.createTime || ""}}</p>
+        <div class="answerNo">
+          <p>
+            <span>共 {{data.total || ""}} 题</span>
+            <span>对 {{data.corrects || ""}} 题</span>
+            <span>错 {{data.incorrects || ""}} 题</span>
+          </p>
+          <p>{{data.nam|| ""}}</p>
+        </div>
+        <p>{{data.useTime|| ""}}</p>
+        <p>姓名：
+          <span class="userName">{{userName}}</span>
+        </p>
+        <p>分数：
+          <span class="score">
+            {{data.score || 0}}
+          </span>
+        </p>
+      </div>
+      <div class="down-load" @click="downTest">
+        <i class="iconfont icon-icon" style="font-size:26px"></i>
+        <span style="font-size:18px">下载</span>
+      </div>
+      <div class="resultContainer" v-if="!isSpell">
+        <ul class="listContainer" v-for="(item,index) in dataList" :key="index">
+          <li class="list-item">
+            <p class="answerItem">
+              <span class="number">{{index+1}}</span>
+              <span :class="{errorColor:item.answerOk=='N'}"> [ {{item.answer}} ]</span>
+            </p>
+            <p class="wordName" :class="{errorColor:item.answerOk=='N'}">{{item.word}}</p>
+            <p class="options" :class="{rightColor:item.correct=='A'}">A. {{item.a}}</p>
+            <p class="options" :class="{rightColor:item.correct=='B'}">B. {{item.b}}</p>
+            <p class="options" :class="{rightColor:item.correct=='C'}">C. {{item.c}}</p>
+            <p class="options" :class="{rightColor:item.correct=='D'}">D. {{item.d}}</p>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <spellDetailBase v-if="isSpell" :testData="data"></spellDetailBase>
+  </div>
+</template>
+
+<script>
+import dataService from "@/service/index";
+import { utility, getRequestSign } from "@/utility";
+import spellDetailBase from "./spellDetailBase";
+
+export default {
+  props: {
+    data: {
+      type: Object,
+      default: function() {
+        return {};
+      }
+    }
+  },
+  data() {
+    return {
+      userName: "", // 用户名
+      dataList: [],
+      isSpell: false
+    };
+  },
+  mounted() {
+    console.log("------------------log", this.data);
+    let examType=this.data.examType;
+    if(examType=="BOOK_WORD_SPELL_AFTER"||examType=="BOOK_WORD_SPELL_BEFORE"||examType=="COLUMN_WORD_SPELL_AFTER"||examType=="COLUMN_WORD_SPELL_BEFORE"){
+      this.isSpell=true;
+    }
+    this.userName = localStorage.getItem("nickName");
+    this.getData();
+  },
+  methods: {
+    // 获取数据
+    getData() {
+      let id = this.data.id || "";
+      if (id) {
+        dataService.getParperDetail(id).then(
+          res => {
+            let code = res.data.code;
+            let msg = res.data.msg;
+            if (code === 200) {
+              this.dataList = res.data.data;
+              // 判断用户是否有选择的答案
+              this.dataList.forEach(e => {
+                if (e && !e.answer) {
+                  e.answer = "_";
+                }
+              });
+            }
+            if (code === 500) {
+              this.$message.error(msg);
+            }
+          },
+          err => {
+            console.log("----------------err", err);
+          }
+        );
+      }
+    },
+    //  下载试卷
+    downTest() {
+      dataService.downloadGroupList(this.data.id,this.data.name);
+    }
+  },
+  components:{
+    spellDetailBase
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+.exam-details-base {
+  .details-box {
+    .down-load {
+      width: 100px;
+      margin: 5px 0;
+      cursor: pointer;
+      color: #56bdff;
+    }
+    .resultDetail-top {
+      display: flex;
+      min-width: 1000px;
+      justify-content: space-around;
+      align-items: center;
+      min-height: 80px;
+      font-size: 18px;
+      background: #f7f7f7;
+      .answerNo {
+        text-align: center;
+      }
+      .userName {
+        font-size: 32px;
+      }
+      .score {
+        font-size: 46px;
+        color: #ff0000;
+      }
+    }
+    .resultContainer {
+      padding: 0 10px 50px 10px;
+      font-size: 18px;
+      box-sizing: border-box;
+      .listContainer {
+        width: 100%;
+        min-width: 1000px;
+        .list-item {
+          min-height: 70px;
+          display: flex;
+          justify-content: space-around;
+          align-items: center;
+          border-bottom: 1px solid #eaeaea;
+          .answerItem {
+            width: 100px;
+            .number {
+              display: inline-block;
+              width: 30px;
+              margin-right: 5px;
+            }
+          }
+          .wordName {
+            width: 100px;
+          }
+          .options {
+            width: 300px;
+          }
+        }
+      }
+    }
+    .rightColor {
+      color: #3cb63b;
+    }
+    .errorColor {
+      color: #ff0000;
+    }
+  }
+}
+</style>

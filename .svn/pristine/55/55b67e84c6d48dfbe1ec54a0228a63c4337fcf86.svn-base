@@ -1,0 +1,6 @@
+export default function (apiRoot) {
+    return {
+        CREATE_PARPER: apiRoot + "/exam/craete",//创建试卷
+        POST_PARPER: apiRoot + "/exam/finish",//提交试卷
+    }
+}

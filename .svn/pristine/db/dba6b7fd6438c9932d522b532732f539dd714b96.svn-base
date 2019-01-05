@@ -1,0 +1,52 @@
+<template>
+  <div class="about">
+    <el-dialog :visible.sync="dialogShow" @close="dialogHide" width="500px" title="闪记星简介" center>
+      <div>闪记星是一款速记软件，拥有快速记忆的特点。闪记星会自动分析用户的学习行为，结合科学的记忆方法，为每个用户规划出一套私有的学习计划，通过科学的计划和简单的重复记忆，达到快速记忆的效果。</div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+    }
+  },
+  data() {
+    return {
+      dialogShow: false
+    };
+  },
+  methods: {
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    }
+  }
+};
+</script>
+<style lang="scss">
+.about {
+  div {
+    letter-spacing: 2px;
+  }
+  .el-dialog__header {
+    background: #66b1ff !important;
+    text-align: center;
+  }
+  .el-dialog__title {
+    color: #f5f7fa;
+  }
+  .el-dialog__headerbtn .el-dialog__close {
+    color: #f5f7fa;
+  }
+  .el-dialog__headerbtn {
+    font-size: 22px;
+  }
+}
+</style>

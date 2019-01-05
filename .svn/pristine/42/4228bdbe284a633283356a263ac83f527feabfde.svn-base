@@ -1,0 +1,219 @@
+<template>
+  <div class="learn-center cnfont">
+
+    <nav-header :showBack="false">
+      <span slot="title">学习中心</span>
+    </nav-header>
+    <div class="book-container">
+      <vue-better-scroll style="height:100%" class="wrapper" ref="scroll">
+        <ul v-for="(item,index) in datalist" :key='index'>
+          <li class="learn-box" >
+            <div class="box-left">
+              <img :src='item.imgUrl' alt="">
+              <div class="bmbox">
+                <template>
+                  <el-button @click="open(index)">删除</el-button>
+                </template>
+              </div>
+            </div>
+            <div class="box-right">
+              <div style="color:#909399">{{item.name}}</div>
+              <div>
+                <el-progress :text-inside="true" :stroke-width="18" :percentage="item.percentage"></el-progress>
+              </div>
+              <div v-if="learnBtn">
+                <el-button type="primary">开始学习</el-button>
+              </div>
+              <el-button type="success" v-else>继续学习</el-button>
+            </div>
+          </li>
+        </ul>
+      </vue-better-scroll>
+    </div>
+
+  </div>
+</template>
+
+<script>
+import VueBetterScroll from "vue2-better-scroll";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+export default {
+  components: {
+    navHeader,
+    VueBetterScroll
+  },
+  data() {
+    return {
+      learnBtn: true,
+      datalist: [
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        },
+        {
+          imgUrl: "static/images/79.jpg",
+          name: "新课标小学英语单词体验版1",
+          percentage: 60
+        }
+      ]
+    };
+  },
+  mounted() {},
+  methods: {
+    open(index) {
+        console.log("-----------", index);
+      this.$confirm("你确定想要删除此课程吗, 是否继续?", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then((index) => {
+          this.datalist.splice(index,1);
+          this.$message({
+            type: "success",
+            message: "删除成功!"
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
+    }
+  }
+};
+</script>
+
+<style lang="scss" >
+.learn-center {
+  width: 100%;
+  height: 100%;
+  .book-container {
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 10px;
+    background: #f7f7f7;
+    .wrapper {
+      background: #fff;
+      border-radius: 30px;
+      overflow-y: scroll;
+      ul {
+        list-style: none;
+        margin: 0 auto;
+        .learn-box {
+          width: 400px;
+          height: 200px;
+          float: left;
+          list-style: none;
+          background: hsl(222, 33%, 94%);
+          padding: 10px;
+          margin: 10px;
+          .box-left {
+            float: left;
+            width: 170px;
+            height: 200px;
+            line-height: 200px;
+            position: relative;
+            cursor: pointer;
+            img {
+              width: 100%;
+              vertical-align: middle;
+            }
+            .bmbox {
+              width: 180px;
+              height: 40px;
+              background: rgba($color: #000000, $alpha: 0.5);
+              position: absolute;
+              bottom: 0px;
+              left: 0px;
+              display: none;
+              font: 12px/30px "宋体";
+              color: white;
+              text-align: center;
+            }
+          }
+          .box-left:hover .bmbox {
+            width: 180px;
+            height: 40px;
+            background: rgba($color: #000000, $alpha: 0.5);
+            position: absolute;
+            bottom: 0px;
+            left: 0px;
+            display: block;
+            font: 12px/30px "宋体";
+            color: white;
+            text-align: center;
+          }
+          .box-right {
+            float: left;
+            height: 200px;
+            text-align: center;
+            margin-left: 20px;
+            .el-progress {
+              position: relative;
+              line-height: 5;
+            }
+            .el-progress-bar__outer {
+              background-color: #fff;
+            }
+            .el-button {
+              padding: 15px 40px;
+            }
+            div {
+              padding: 0;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+</style>
+
+

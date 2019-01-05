@@ -1,0 +1,465 @@
+<template>
+  <div class="learn-center cnfont">
+    <nav-header ref="navHeader" :showBack="false">
+      <span slot="title">学习中心 {{learnTypeName}}</span>
+    </nav-header>
+    <div class="learn-container" v-if="isShow" v-loading="learnLoading" element-loading-text="拼命加载中">
+      <ul v-loading="learnLoading" element-loading-text="拼命加载中">
+        <li class="learn-box" v-for="(item,index) in bookList" :key='index'>
+          <div class="box-left">
+            <img :src='url+item.coverImgUrl' alt="">
+            <div class="bmbox" @click="open(item)" title="删除课本">
+              <i class="iconfont icon-shanchu deleteBook"></i>
+            </div>
+          </div>
+          <div class="box-right">
+            <div class="bookname" :title="item.name">{{item.name}}</div>
+            <!-- 认读 -->
+            <div v-if="learnType==='DEFAULT'">
+              <div>
+                <el-progress :text-inside="true" :stroke-width="14" :percentage='(Math.floor((item.totalWordLearns/item.words)*100))>100?100:(Math.floor((item.totalWordLearns/item.words)*100))'></el-progress>
+              </div>
+              <div>
+                <el-button v-if="item.totalWordLearns===0" type="primary" @click="learnStart(item)">开始学习</el-button>
+                <el-button type="success" v-else @click="learnStart(item)">继续学习</el-button>
+              </div>
+            </div>
+            <!-- 辨音 -->
+            <div v-else-if="learnType==='LISTEN'">
+              <div>
+                <el-progress :text-inside="true" :stroke-width="14" :percentage='(Math.floor((item.totalListenWordLearns/item.words)*100))>100?100:(Math.floor((item.totalListenWordLearns/item.words)*100))'></el-progress>
+              </div>
+              <div>
+                <el-button v-if="item.totalListenWordLearns===0" type="primary" @click="learnStart(item)">开始学习</el-button>
+                <el-button type="success" v-else @click="learnStart(item)">继续学习</el-button>
+              </div>
+            </div>
+            <!-- 拼写 -->
+            <div v-else-if="learnType==='SPELL'">
+              <div>
+                <el-progress :text-inside="true" :stroke-width="14" :percentage='(Math.floor((item.totalSpellWordLearns/item.words)*100))>100?100:(Math.floor((item.totalSpellWordLearns/item.words)*100))'></el-progress>
+              </div>
+              <div>
+                <el-button v-if="item.totalSpellWordLearns===0" type="primary" @click="learnStart(item)">开始学习</el-button>
+                <el-button type="success" v-else @click="learnStart(item)">继续学习</el-button>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+    <div class="select-learn-type">
+      <div class="popover">
+        <transition name="popover-fade">
+          <div class="popover-content" v-show="popoverShow">
+            <div v-for="(item,index) in icons" :key="index" :class="['icon-item'+index,currIcon===item.icon?'currIcon':'']" class="" @click="selectLearnType(item)" :title="item.name">
+              <i :class="['iconfont',item.icon]"></i>
+            </div>
+          </div>
+        </transition>
+        <el-button class="popover-reference" @click="popoverShow=!popoverShow" :title="learnTypeName">
+          <i class="iconfont" :class="currIcon"></i>
+        </el-button>
+      </div>
+    </div>
+    <div v-if="!isShow" class="showLesson">快去课程中心下载课程学习吧！</div>
+    <pay-dialog :show.sync="payDialogShow" @success="success"></pay-dialog>
+  </div>
+</template>
+
+<script>
+import payDialog from "@/components/payDialog";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import { LEARN_TYPE } from "@/utility/dict";
+import { ResourcePath } from "@/service/urlConfig";
+
+export default {
+  data() {
+    return {
+      isShow: false,
+      popoverShow: false,
+      payDialogShow: false,
+      url: ResourcePath,
+      learnBtn: true,
+      datalist: [],
+      bookList: [],
+      bookNo: "",
+      status: "",
+      currIcon: "icon-eye",
+      learnTypeName: "认读",
+      showExam: true,
+      learnLoading: false,
+      learnType: LEARN_TYPE.DEFAULT,
+      icons: [
+        {icon: "icon-eye", type: LEARN_TYPE.DEFAULT, name: "认读"},
+        {icon: "icon-listen", type: LEARN_TYPE.LISTEN, name: "辨音"},
+        {icon: "icon-Pen", type: LEARN_TYPE.SPELL, name: "拼写"}
+      ]
+    };
+  },
+  mounted() {
+    this.getDownBooklist();
+    this.learnType = localStorage.getItem("learnType") || LEARN_TYPE.DEFAULT
+    let item = this.icons.find((item) => (item.type === this.learnType));
+    if (item) {
+      this.learnTypeName = item.name;
+      this.currIcon = item.icon
+    }
+  },
+  methods: {
+    learnStart(val) {
+      if (val.bookType !== "FREE" && localStorage.getItem("vipDay") <= 0) {
+        this.payDialogShow = true;
+        this.$message.error("Vip已过期，请充值");
+      } else {
+        this.bookNo = val.bookNo;
+        this.addBookLearnRecord();
+        this.$router.push({
+          name: "learning",
+          params: {
+            bookInfo: val,
+            learnType: this.learnType
+          }
+        });
+      }
+    },
+    // 新增课本学习记录
+    addBookLearnRecord() {
+      this.loadingShow = true;
+      dataService.addBookRecord(this.learnType, this.bookNo).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          this.loadingShow = false;
+          if (code === 200) {
+          }
+        },
+        () => {
+          this.loadingShow = false;
+          this.$message.error("请求错误");
+        }
+      );
+    },
+    getDownBooklist() {
+      this.datalist = [];
+      this.learnLoading = true;
+      dataService.getDownBookList(0, 1000).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          if (Array.isArray(data.content) && data.content.length === 0) {
+            this.isShow = false;
+          } else {
+            this.isShow = true;
+          }
+          if (code === 200) {
+            this.learnLoading = false;
+            this.datalist = data.content;
+            this.filtterlist()
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+          this.learnLoading = false;
+        }
+      );
+    },
+    open(item) {
+      this.$confirm(`你确定想要删除${item.name}吗, 是否继续?`, "删除", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          console.log(item, "-----------");
+          this.bookNo = item.bookNo;
+          this.status = "DELETE";
+          let bookname = item.name;
+          dataService.downBook(this.bookNo, this.status).then(
+            res => {
+              let result = res.data;
+              let code = result.code;
+              if (code === 200) {
+                this.$message.success(`[  ${bookname}  ]    已成功删除`);
+                this.getDownBooklist();
+              }
+            },
+            () => {
+              this.$message.error("请求错误");
+            }
+          );
+        })
+        .catch(() => {
+          // this.$message({
+          //   type: "info",
+          //   message: "已取消删除"
+          // });
+        });
+    },
+    selectLearnType(val) { // 选择学习类型
+      this.popoverShow = false
+      this.currIcon = val.icon;
+      this.learnType = val.type;
+      this.learnTypeName = val.name
+      localStorage.setItem('learnType', val.type)
+      this.filtterlist()
+    },
+    filtterlist() { // 真对学习类型过滤一些课本
+      if (this.learnType === LEARN_TYPE.SPELL) {
+        this.bookList = this.datalist.filter((item) => (item.bookSort === "ENGLISH_WORD" && item.canExam === "Y"))
+      } else if (this.learnType === LEARN_TYPE.LISTEN) {
+        this.bookList = this.datalist.filter((item) => (item.bookSort === "ENGLISH_WORD"))
+      } else {
+        this.bookList = this.datalist
+      }
+    },
+    success() {
+      // 充值成功之后
+      this.$refs.navHeader && this.$refs.navHeader.computedVip();
+    }
+  },
+  components: {
+    navHeader,
+    payDialog
+  }
+};
+</script>
+
+<style lang="scss" >
+.learn-center {
+  width: 100%;
+  height: 100%;
+  .learn-container {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 55px;
+    padding: 10px;
+    overflow: auto;
+    ul {
+      list-style: none;
+      margin: 0 auto;
+      // display: flex;
+      // flex-wrap: wrap;
+      min-width: 1000px;
+      .learn-box {
+        display: inline-block;
+        min-height: 120px;
+        color: #767676;
+        border: 1px solid #ddd;
+        padding: 10px 10px;
+        margin: 10px 5px;
+        border-radius: 5px;
+        box-shadow: #c2c1c6 2px 1px 7px 0px;
+        .box-left {
+          float: left;
+          width: 110px;
+          height: 130px;
+          line-height: 130px;
+          position: relative;
+          img {
+            width: 100%;
+            vertical-align: middle;
+          }
+          .bmbox {
+            width: 110px;
+            height: 40px;
+            background: rgba($color: #000000, $alpha: 0.5);
+            position: absolute;
+            bottom: 10px;
+            left: 0px;
+            display: none;
+            font: 12px/30px '宋体';
+            color: white;
+            text-align: center;
+            cursor: pointer;
+          }
+        }
+        .box-left:hover .bmbox {
+          width: 110px;
+          height: 40px;
+          background: rgba($color: #000000, $alpha: 0.5);
+          position: absolute;
+          bottom: 10px;
+          left: 0px;
+          display: block;
+          font: 12px/30px '宋体';
+          color: white;
+          text-align: center;
+          .deleteBook {
+            font-size: 30px;
+            position: absolute;
+            bottom: 0px;
+            left: 35%;
+          }
+        }
+        .box-right {
+          float: left;
+          height: 120px;
+          margin-left: 20px;
+          .bookname {
+            width: 170px;
+            height: 25px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .el-progress {
+            position: relative;
+            line-height: 3;
+          }
+          .el-progress-bar__outer {
+            background-color: #e4e7ed;
+          }
+          .el-progress-bar__innerText {
+            color: #000000;
+            font-size: 10px;
+          }
+          .el-button {
+            padding: 15px 40px;
+          }
+          div {
+            padding: 0;
+          }
+        }
+      }
+    }
+  }
+  .select-learn-type {
+    position: fixed;
+    bottom: 100px;
+    right: 50px;
+    .popover {
+      position: relative;
+      .popover-content {
+        position: absolute;
+        bottom: 85px;
+        width: 80px;
+        .icon-item0,
+        .icon-item1,
+        .icon-item2 {
+          width: 80px;
+          height: 80px;
+          line-height: 80px;
+          border-radius: 80px;
+          text-align: center;
+          cursor: pointer;
+          margin: 5px auto;
+          box-sizing: border-box;
+          padding: 2px;
+          &:hover {
+            padding: 1px;
+            border: 1px solid #409eff;
+            color: #409eff;
+          }
+        }
+        .currIcon {
+          padding: 1px;
+          border: 1px solid rgba($color: #000000, $alpha: 0.4);
+          color: #409eff;
+        }
+        .icon-item2 {
+          i {
+            font-size: 20px;
+          }
+        }
+        .icon-item1 {
+          i {
+            font-size: 28px;
+          }
+        }
+        .icon-item0 {
+          i {
+            font-size: 20px;
+          }
+        }
+      }
+      .popover-reference {
+        width: 80px;
+        height: 80px;
+        line-height: 80px;
+        border-radius: 80px;
+        text-align: center;
+        // border: 1px solid rgba($color: #000000, $alpha: 0.4);
+        padding: 0;
+        background-color: #1abeff;
+        color: #fff;
+        &::hover {
+          color: #e4e7ed;
+          background-color: #1abeff;
+        }
+        span {
+          display: block;
+          width: 80px;
+          height: 80px;
+          i {
+            font-size: 24px;
+          }
+        }
+      }
+    }
+  }
+  .showLesson {
+    text-align: center;
+    width: 100%;
+    height: 500px;
+    line-height: 500px;
+    font-size: 35px;
+    letter-spacing: 10px;
+    color: lightgrey;
+  }
+}
+
+.popover-fade-enter-active {
+  animation-direction: 0.5s;
+  animation-delay: 0s;
+  animation-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.popover-fade-leave-active {
+  animation-direction: 0.8s;
+  animation-delay: 0s;
+  animation-timing-function: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+.popover-fade-enter {
+  animation-name: popover-fade-in;
+}
+
+.popover-fade-leave-to {
+  animation-name: popover-fade-out;
+}
+@keyframes popover-fade-in {
+  from {
+    -webkit-transform: translate3d(100%, 0, 0) skewX(-30deg);
+    transform: translate3d(100%, 0, 0) skewX(-30deg);
+    opacity: 0;
+  }
+  60% {
+    -webkit-transform: skewX(20deg);
+    transform: skewX(20deg);
+    opacity: 1;
+  }
+  80% {
+    -webkit-transform: skewX(-5deg);
+    transform: skewX(-5deg);
+    opacity: 1;
+  }
+  to {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+@keyframes popover-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    -webkit-transform: translate3d(100%, 0, 0) skewX(30deg);
+    transform: translate3d(100%, 0, 0) skewX(30deg);
+    opacity: 0;
+  }
+}
+</style>

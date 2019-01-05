@@ -1,0 +1,231 @@
+<template>
+  <div class="wordDetail-box">
+    <el-dialog :fullscreen="true" :visible.sync="dialogShow" @close="dialogHide" center>
+      <div class="unKnowDetail clear">
+        <div class="header">
+          <nav-header>
+            <div slot="title">
+              <span>{{wordlist.name}}共({{wordlist.totalWordNotes}})条</span>
+            </div>
+          </nav-header>
+        </div>
+        <div class="book-container" v-if="wordLisShow">
+          <ul class="book-list" v-loading="wordLoading" element-loading-text="拼命加载中">
+            <li class="list-item" v-for="(item,index) in dataList" :key='index' @click="playAudio(item)">
+              <p class="word">
+                <span class="word-name">{{item.content1}}</span>
+                <span>{{item.content2}}</span>
+              </p>
+              <div>
+                <p>{{item.means[0].chinese}}</p>
+                <p>{{item.means[1].english}}</p>
+              </div>
+              <ul v-for="(dish,idx) in item.examples" :key="idx" style="listStyle:none">
+                <li class="case-item">{{dish.case}}</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <div class="noWord" v-else>暂无生词</div>
+        <audio  ref="wordAudio" :src="url">
+        </audio>
+        <el-pagination background @current-change="pageChange" :current-page.sync="pageIdx" :page-size="pageSize" layout="total, prev, pager, next" :total="totalNumber">
+        </el-pagination>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import dataService from "@/service/index";
+import { audioPath } from "@/service/urlConfig";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    },
+    newWord: {
+      type: Object
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+      console.log(val);
+    },
+    newWord: function(val) {
+      console.log(val);
+      this.wordlist = val;
+      this.getWordList();
+      console.log(val.bookNo, "val.bookNo");
+    }
+  },
+  data() {
+    return {
+      wordLisShow: true,
+      wordlist: {},
+      dialogShow: false,
+      newWordNum: "",
+      bookName: "",
+      dataList2: [],
+      audioUrl: audioPath,
+      url: "",
+      pageIdx: 1,
+      pageSize: 10,
+      totalNumber: 0,
+      audioPath: audioPath,
+      wordLoading: false
+      // newWordloading: true
+    };
+  },
+  mounted() {},
+  methods: {
+    pageChange(val) {
+      this.getWordList();
+    },
+    playAudio(val) {
+      this.url = this.audioPath + val.content7;
+      let playAudio = this.$refs.wordAudio;
+      playAudio.play();
+      console.log(this.url, "----------val");
+    },
+    getWordList() {
+      this.dataList2 = [];
+      this.wordLoading = true;
+      let pageIdx = this.pageIdx - 1;
+      dataService
+        .unKnownWord(pageIdx, this.pageSize, this.wordlist.bookNo, "DEFAULT")
+        .then(
+          res => {
+            let result = res.data;
+            let data = result.data;
+            let msg = result.msg;
+            let code = result.code;
+            if (code === 200) {
+              this.dataList2 = data.content;
+              this.totalNumber = data.totalRecords;
+              this.wordLoading = false;
+
+              if (JSON.stringify(data.content) !== "[]") {
+                console.log(1111111);
+                this.wordLisShow = true;
+              } else {
+                this.wordLisShow = false;
+              }
+            } else {
+              this.$message.error(msg);
+              this.wordLoading = false;
+            }
+          },
+          () => {
+            this.$message.error("请求错误");
+            this.wordLoading = false;
+          }
+        );
+    },
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    }
+  },
+  computed: {
+    dataList: function() {
+      let words = _.cloneDeep(this.dataList2 || []);
+      words.forEach(e => {
+        let mean = e.content3.split("<br />");
+        let example = e.content4.split("<br />");
+        e.means = [{ chinese: mean[1] }, { english: mean[2] }];
+        e.examples = [];
+        for (let i = 0; i < example.length; i++) {
+          e.examples.push({ case: example[i] });
+        }
+      });
+      console.log("---------words", words);
+      return words;
+    }
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.wordDetail-box {
+  .nav-header {
+    position: relative;
+    top: -58px;
+    // width: 98%;
+  }
+  .el-dialog--center .el-dialog__body {
+    text-align: initial;
+    padding: 29px 0px !important;
+  }
+  .nav-header .nav-header-left {
+    display: none;
+  }
+  .unKnowDetail {
+    width: 100%;
+    height: 100%;
+    .book-container {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 30px;
+      padding: 10px;
+      background: #f7f7f7;
+      overflow: auto;
+      .book-list {
+        width: 100%;
+        list-style: none;
+        // margin: 0 auto;
+        padding: 0 5px;
+        .list-item {
+          width: 98%;
+          min-height: 180px;
+          color: #767676;
+          border: 1px solid #ddd;
+          padding: 20px 10px;
+          margin-bottom: 15px;
+          border-radius: 5px;
+          background: #ffffff;
+          box-shadow: #c2c1c6 2px 1px 7px 0px;
+          .word {
+            margin-bottom: 30px;
+            .word-name {
+              font-size: 24px;
+              color: #22aefe;
+              margin-right: 10px;
+            }
+          }
+          .case-item {
+            line-height: 24px;
+          }
+        }
+      }
+    }
+    .el-pagination {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+    }
+  }
+  .el-dialog__headerbtn .el-dialog__close {
+    color: #ffff;
+  }
+  .el-dialog__headerbtn {
+    font-size: 30px;
+    top: 14px;
+    z-index: 99999;
+  }
+  .noWord {
+    text-align: center;
+    font-size: 50px;
+    letter-spacing: 28px;
+    height: 300px;
+    line-height: 300px;
+    color: aqua;
+  }
+}
+</style>

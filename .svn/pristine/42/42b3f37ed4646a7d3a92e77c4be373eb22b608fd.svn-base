@@ -1,0 +1,170 @@
+<template>
+  <div class="home-container">
+    <div class="view-box">
+      <router-view> </router-view>
+    </div>
+    <div class="footer">
+      <div class="footer-body">
+        <ul class="router-box">
+          <li v-for="(item,index) in navFooter" :key="index" class="router-item" @click="changeView(index,item)">
+            <span class="router-link" :style="{borderColor:currRouteIndex===index?'#56bdff':'#333',backgroundColor:currRouteIndex===index?'#56bdff':'#fff'}">
+              <i :class="[iconStyle,item.iconName]" :style="{color:currRouteIndex===index?'#fff':'#333'}"></i>
+            </span>
+            <span :class="currRouteIndex===index?active:normal" style="font-size:10px">
+              {{item.name}}
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import dataService from "@/service";
+import { ASSETS_TYPE } from "@/utility/dict";
+export default {
+  data() {
+    return {
+      iconStyle: "icon-style iconfont",
+      active: "icon-style-active",
+      normal: "icon-style-normal",
+      navFooter: [
+        { name: "学习中心", iconName: "icon-book", router: "learnCenter" },
+        {
+          name: "课程中心",
+          iconName: "icon-clouddownload",
+          router: "courseCenter"
+        },
+        { name: "个人中心", iconName: "icon-person", router: "personCenter" },
+        {
+          name: "生词本",
+          iconName: "icon-iosbookmarks",
+          router: "wordNote"
+        },
+        { name: "词汇测试", iconName: "icon-thumbsup", router: "examEntry" }
+      ],
+      currRouteIndex: 0
+    };
+  },
+  mounted() {
+    dataService.getAssetsList(0, 10, ASSETS_TYPE.MUSIC).then(
+      res => {
+        let result = res.data;
+        let code = result.code;
+        let msg = result.msg;
+        if (code === 200) {
+          let data = result.data;
+          let list = data.content;
+          localStorage.setItem("musicList", JSON.stringify(list));
+        }
+        if (code === 500) {
+          this.$message.error(msg);
+        }
+        console.log("-----------list assets", res);
+      },
+      err => {
+        console.log("------------err", err);
+      }
+    );
+    let name = this.$router.currentRoute.name;
+    if (name) {
+      let index = this.navFooter.findIndex(item => item.router === name);
+      if (index !== -1) {
+        this.currRouteIndex = index;
+      }
+    }
+  },
+  beforeRouteUpdate(to, from, next) {
+    let name = to.name;
+    if (name) {
+      let index = this.navFooter.findIndex(item => item.router === name);
+      if (index !== -1) {
+        this.currRouteIndex = index;
+      }
+    }
+    next && next();
+  },
+  methods: {
+    changeView(index, item) {
+      this.currRouteIndex = index;
+      this.$router.push({ name: item.router });
+    }
+  }
+};
+</script>
+
+<style lang="scss" scoped>
+div,
+ul,
+li,
+span,
+i {
+  padding: 0;
+  margin: 0;
+}
+.home-container {
+  width: 100%;
+  height: 100%;
+  // min-width: 1000px;
+  .view-box {
+    width: 100%;
+    height: 100%;
+  }
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 55px;
+    min-width: 800px;
+    border-top: 1px solid #56bdff;
+    background-color: #ffffff;
+    .footer-body {
+      width: 60%;
+      height: 100%;
+      line-height: 100%;
+      margin: 0 auto;
+      .router-box {
+        width: 100%;
+        list-style: none;
+        // margin: 0 auto;
+        .router-item {
+          width: 20%;
+          box-sizing: border-box;
+          padding: 5px 5px;
+          display: inline-block;
+          text-align: center;
+          cursor: pointer;
+          &:hover {
+            background: #d8dddd;
+          }
+          .router-link {
+            width: 30px;
+            height: 30px;
+            display: block;
+            line-height: 30px;
+            border-width: 1px;
+            border-style: solid;
+            box-sizing: border-box;
+            border-radius: 30px;
+            margin: 0 auto;
+            cursor: pointer;
+          }
+          .icon-style {
+            font-size: 22px;
+          }
+          .icon-style-active {
+            color: #56bdff;
+            // color: #ffffff;
+          }
+          .icon-style-normal {
+            // background-color: #ffffff;
+            color: #333;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

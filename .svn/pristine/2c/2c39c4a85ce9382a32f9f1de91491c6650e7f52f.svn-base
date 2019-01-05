@@ -1,0 +1,290 @@
+<template>
+    <div class='learnStatistics'>
+        <div class="header">
+            <nav-header>
+                <div slot="title" class="shopping-title">
+                <div class='areas'>
+                    <span class="area-item">{{title}}</span>
+                </div>
+                </div>
+            </nav-header>
+        </div>
+        <div class="statisticsMain">
+            <div class="statiscsTab">
+                <el-radio-group v-model="tabSelect" class="tabRadio">
+                        <el-radio-button label="周">按周</el-radio-button>
+                        <el-radio-button label="月">按月</el-radio-button>
+                        <el-radio-button label="年">按年</el-radio-button>
+                </el-radio-group>
+            </div>
+            <div class="block" v-show="dayShow">
+                <i class="el-icon-arrow-left" @click="getWeekTime('up')"></i>
+                <b class="weekTime">{{dayValStart}} 至 {{dayValEnd}}</b>
+                <i class="el-icon-arrow-right" @click="getWeekTime('down')"></i>
+            </div>
+            <div class="block" v-show="monthShow">
+                <i class="el-icon-arrow-left" @click="getMonthTime('up')"></i>
+                <b class="weekTime">{{monthVal}}</b>
+                <i class="el-icon-arrow-right" @click="getMonthTime('down')"></i>
+            </div>
+            <div class="block" v-show="yearShow">
+                <i class="el-icon-arrow-left" @click="getYearTime('up')"></i>
+                <b class="weekTime">{{yearVal}}</b>
+                <i class="el-icon-arrow-right" @click="getYearTime('down')"></i>
+            </div>
+            <ve-histogram :data="chartData" :settings="chartSettings"></ve-histogram>
+      </div>
+    </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+export default {
+    components: {
+        navHeader
+    },
+    data(){
+        return{
+            tabSelect:'周',
+            title:"学习统计",
+            dayShow:true,
+            monthShow:false,
+            yearShow:false,
+            pickerVal:{
+                disabledDate(time) {
+                    return time.getTime() > Date.now();
+                }
+            },
+            dayValStart: new Date(),
+            dayValEnd: new Date(),
+            monthVal: new Date(),
+            yearVal: new Date(),
+            timeStart:'',
+            timeEnd:'',
+            weekArr:null,
+            chartData:{
+                columns: ['日期', '学习时间', '学习单词数'],
+                rows: [
+                    { '学习时间': 1523, '日期': '1月1日', '学习单词数': 1523},
+                    { '学习时间': 1223, '日期': '1月2日', '学习单词数': 1523},
+                    { '学习时间': 2123, '日期': '1月3日', '学习单词数': 1523},
+                    { '学习时间': 4123, '日期': '1月4日', '学习单词数': 1523}
+                ]
+            },
+            chartSettings:{
+                metrics: ['学习时间', '学习单词数'],
+                dimension: ['日期']
+            }
+        }
+    },
+    methods:{
+        getWeekTime(type){
+            console.log(type)
+            if(type==='up'){
+                //  请求上周
+                let timestamp = Date.parse(new Date(this.weekArr[0]))
+                this.weekArr=this.timeWeek(timestamp,'jian')
+                console.log(timestamp)
+                this.dayValStart=this.weekArr[0]
+                this.dayValEnd=this.weekArr[6]
+                console.log(this.dayValStart)
+                console.log(this.dayValEnd)
+            }else{
+                //  请求下周
+                console.log(this.weekArr[6])
+                let timestamp = Date.parse(new Date(this.weekArr[6]))
+                let nowTimestamp = Date.parse(new Date())
+                if(nowTimestamp>timestamp){
+                    this.weekArr=this.timeWeek(timestamp,'jia')
+                    console.log(timestamp)
+                }
+                this.dayValStart=this.weekArr[0]
+                this.dayValEnd=this.weekArr[6]
+            }
+        },
+        timeWeek(timestamps,sum){
+            let week=[]
+            if(sum==='jian'){
+                for(let i = 7;i>0;i--){
+                    week.push(this.timestampToTime(timestamps - 3600 * 1000 * 24 * i))
+                }
+            }else{
+                for(let i = 0;i<7;i++){
+                    week.push(this.timestampToTime(timestamps + 3600 * 1000 * 24 * (i+1)))
+                }
+                console.log(week)
+            } 
+            return week  
+        },
+        getMonthTime(type){
+            console.log(type)
+            let months=parseFloat(this.monthVal.substring(5,7))
+            let years=parseFloat(this.monthVal.substring(0,4))
+            console.log(months)
+            if(type==='up'){
+                if(months===1){
+                    this.monthVal=(years-1)+"-"+12
+                }else{
+                    if(months<10){
+                        this.monthVal=years+"-0"+(months-1)
+                    }else{
+                        this.monthVal=years+"-"+(months-1)
+                    }
+                }
+            }else{
+                let a=this.formatDateTime(new Date()).substring(0,7).split('-')
+                let j=parseFloat(a[0]+a[1])
+                let k=parseFloat(this.monthVal.split('-')[0]+''+this.monthVal.split('-')[1])
+                console.log(j)
+                console.log(k)
+                if ( k<j){
+                    console.log("小于")
+                    if(months===12){
+                        this.monthVal=(years+1)+"-0"+1
+                    }else{
+                        if(months<9){
+                            this.monthVal=years+"-0"+(months+1)
+                        }else{
+                            this.monthVal=years+"-"+(months+1)
+                        }
+                    }
+                }
+            }
+        },
+        getYearTime(type){
+            console.log(type)
+            let y=parseFloat(this.formatDateTime(new Date()).substring(0,4))
+            let years=parseFloat(this.yearVal)
+            if(type==='up'){
+                this.yearVal=years-1
+            }else{
+                if(years<y){
+                   this.yearVal=years+1
+                }
+            }
+        },
+        // 将时间戳转化为yyyymmdd
+        timestampToTime(timestamp) {
+            let date = new Date(timestamp)
+            let Y = date.getFullYear() + '';
+            let M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '';
+            let D = date.getDate()< 10 ? '0'+(date.getDate()) : date.getDate();
+            return Y+"-"+M+"-"+D;
+        },
+        // 将国际时间格式转化为yyyymmdd
+        formatDateTime(time){
+             console.log('nihaos')
+            let year=time.getFullYear()
+            let month=time.getMonth() + 1 < 10 ? '0'+(time.getMonth()+1) : time.getMonth()+1
+            let date=time.getDate() < 10 ? '0'+(time.getDate()) : time.getDate()
+            return year+'-'+month+'-'+date
+        },
+        getCurrMonthDay(date) {
+            let oneDayTime=24*60*60*1000
+            let time = new Date(date);
+            let arr = [];
+            let currMouthDate = new Date(time.getFullYear(), time.getMonth() + 1, 0); //当月最后一天的 date
+            let days = currMouthDate.getDate(); //得到当月一共月几天
+            let dateTimes = currMouthDate.getTime();
+            let temp = null;
+            for (let i = 0; i < days; i++) {
+                let s = dateTimes - i * oneDayTime;
+                temp = new Date(s);
+                arr.unshift(this.timestampToTime(temp));
+            }
+            return arr;
+        },
+        getWeekSection(date) {
+            let oneDayTime=24*60*60*1000
+            //根据某个日期获取当周的周一和周日的日期
+            let week = [];
+            let nowTime = date.getTime();
+            let day = date.getDay() || 7;
+            let MondayTime = nowTime - (day - 1) * oneDayTime; //周一
+            let startDate = new Date(MondayTime);
+            let startTime = startDate.getTime();
+            week.push(this.timestampToTime(startDate));
+            for (let i = 1; i < 7; i++) {
+                let s = i * oneDayTime;
+                let time = new Date(startTime + s);
+                week.push(this.timestampToTime(time));
+            }
+            console.log(week)
+            return week;
+        },
+    },
+    mounted(){
+        this.weekArr=this.getWeekSection(new Date())
+        this.dayValStart=this.weekArr[0]
+        this.dayValEnd=this.weekArr[6]
+        console.log(this.dayValStart,this.dayValEnd)
+        console.log(this.getCurrMonthDay(new Date()))
+    },
+    watch:{
+        tabSelect(val,oldVal){
+            console.log(val,oldVal)
+            if(val==='周'){
+                this.dayShow=true
+                this.monthShow=false
+                this.yearShow=false
+            }else if(val==='月'){
+                this.dayShow=false
+                this.monthShow=true
+                this.yearShow=false
+                this.monthVal=this.formatDateTime(new Date()).substring(0,7)
+            }else{
+                this.dayShow=false
+                this.monthShow=false
+                this.yearShow=true
+                this.yearVal=this.formatDateTime(new Date()).substring(0,4)
+            }
+        }
+    },
+    computed: {
+
+    },
+};
+</script>
+
+<style lang="scss">
+.learnStatistics{
+    .statisticsMain{
+        text-align: center;
+        .ve-histogram{
+            margin:20px;
+        }
+        .statiscsTab{
+            margin-top:20px;
+            .el-radio-button{
+                width:200px;
+                .el-radio-button__inner{
+                    width:200px;
+                }
+            }
+            .is-active{
+                .el-radio-button__inner{
+                    background-color: #1DB9FE;
+                    border-color:#1DB9FE;
+                }
+            }
+        }
+        .block{
+            margin:10px;
+            text-align: center;
+            .weekTime{
+                font-weight: normal;
+            }
+            i{
+                cursor: pointer;
+            }
+            .el-input__inner{
+                border:none;
+                padding: 0;
+                text-align: center;
+            }
+            .el-input__icon {
+                display: none;
+            }
+        }
+    }
+}
+</style>

@@ -1,0 +1,582 @@
+<template>
+	<div class="wordTest clear"> 
+    <div class="header">
+      <nav-header>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">词汇测试</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="wordTest-container">
+      <div class="test-top">
+        <p class="test-lv">等级：综合测试
+          <span>(共{{wordList.length}}题)</span>
+        </p>
+        <!-- <p  class="test-count">题量：{{curr+1}}/{{wordList.length}}</p> -->
+        <el-progress v-if="!isOver" :percentage="progressMain" status="success"></el-progress>
+        <div class="test-res">
+          <p class="test-right">正确：{{rightN}}</p>
+          <p class="test-err">错误：{{errorN}}</p>
+        </div>
+      </div>
+      <!-- 测试内容 -->
+      <div class="test-main" v-show="!isOver">
+        <div class="word-content">
+          <p class="test-word">{{nowWord}}</p>
+          <el-progress class="progress" :percentage="progress" status="exception"></el-progress>
+          <!-- <p>{{Math.ceil(time)}} s</p> -->
+        </div>
+        <div class="content-container" v-loading="loading">
+          <transition-group name='fade'>
+            <!-- 汉字列表 -->
+            <ul class="word-list" v-for="(item, idx) in wordList" :key="idx" v-if="idx==curr">
+              <li class="item-container" v-for="(option,index) in 4" :key ="index" @click="check(item,index)">
+                <div class='word-item' :class="{'right-active':chooseIdx === index && !currError,'error-active':chooseIdx === index && currError,'right-active-two':rightIdx === index && currError,'right-active-three':rightIdx === index && currError2}">
+                  <p v-if="index == 0">A {{item.a}}</p>
+                  <p v-if="index == 1">B {{item.b}}</p>
+                  <p v-if="index == 2">C {{item.c}}</p>
+                  <p v-if="index == 3">D {{item.d}}</p>
+                </div>
+                <img class="right" src="static/images/right.png"  alt="" v-show='chooseIdx === index && !currError'>
+                <img class="right" src="static/images/right.png"  alt="" v-show='rightIdx === index && currError'>
+                <img class="error" src="static/images/error.png" alt="" v-show='chooseIdx === index && currError'>
+              </li>
+            </ul>
+          </transition-group>
+        </div>
+      </div>
+      <!-- 测试结果 -->
+      <div class="test-score" v-show="isOver">
+        <p class="test-score-title">词汇量测试结果</p>
+        <img v-if="percent>=0.9" class="test-score-face" src="static/images/face_1.png" alt="">
+        <img v-if="percent>=0.8&&percent<0.9" class="test-score-face" src="static/images/face_2.png" alt="">
+        <img v-if="percent>=0.7&&percent<0.8" class="test-score-face" src="static/images/face_3.png" alt="">
+        <img v-if="percent<0.7" class="test-score-face" src="static/images/face_4.png" alt="">
+        <p class="test-score-N">您的单词正确数量为{{rightN}}个</p>
+        <p v-if="percent>=0.9" class="test-score-text">哇 太棒了 给你点个赞 要坚持下去</p>
+        <p v-if="percent>=0.8&&percent<0.9" class="test-score-text">您的词汇量还不错哦！再加把劲就满分啦！</p>
+        <p v-if="percent>=0.7&&percent<0.8" class="test-score-text">您的词汇量还有待提高，要加油喽！</p>
+        <p v-if="percent<0.7" class="test-score-text">您的词汇量是在太少了</p>
+      </div>
+      <el-button type="primary" class="pauseBtn" v-show="currError" @click="pause">{{btnText}}</el-button>
+    </div>
+	</div>
+</template>
+<script>
+import { Base64 } from 'js-base64';
+import navHeader from "@/components/navHeader";
+import _ from "lodash";
+import utility from "@/utility/utility";
+import dataService from "@/service/index";
+
+export default {
+  mounted() {
+    //获取数据
+    this.getData();
+  },
+  computed: {},
+  data() {
+    return {
+      loading: true,
+      rightN: 0, //正确数量
+      errorN: 0, //错误数量
+      noAnswer: 0, //未回答数量
+      time: 10, //倒计时
+      progress: 100, //进度条
+      progressMain: 0, //测试总进度条
+      curr: 0,
+      chooseIdx: -1,
+      rightIdx: -1,
+      currError: false,
+      currError2: false, //标记 选错时 正确选项的样式
+      isOver: false, //是否显示测试结果
+      timer: null, //单词定时器
+      oneTimer: null, //选错之后的一次性定时器
+      nextTimer: null, //next中的一次性定时器
+      btnText: "暂停",
+      percent: 0, //正确率
+      wordList: [],
+      nowWord: "", //当前单词
+      testResult: {
+        examId: "",
+        score: "",
+        startTime: "",
+        finishTime: "",
+        records: []
+      }
+    };
+  },
+
+  methods: {
+    //获取数据
+    getData: function() {
+      dataService
+        .createParper("BOOK_WORD_BEFORE", 20, "973446375517822978")
+        .then(
+          res => {
+            console.log("------------生成试卷-res", res);
+            let code = res.data.code;
+            if (code == 200) {
+              let examId = res.data.data.id;
+              let startTime = res.data.data.createTime;
+              startTime = startTime
+                .replace(/-/g, "")
+                .replace(/:/g, "")
+                .replace(/ /g, "");
+              console.log("--------startTime", startTime);
+              this.testResult.examId = examId + "";
+              this.testResult.startTime = startTime;
+              // console.log("------this.testResult", this.testResult);
+
+              dataService.getParperDetail(examId).then(
+                res => {
+                  console.log("-------测试信息-res", res);
+                  this.loading=false;
+                  let code = res.data.code;
+                  if (code == 200) {
+                    this.wordList = res.data.data;
+                    console.log("-----this.wordList", this.wordList);
+                    this.nowWord = this.wordList[this.curr].word;
+                    //处理正确答案选项
+                    let n = this.wordList[this.curr].correct;
+                    let id = this.wordList[this.curr].id + "";
+                    switch (n) {
+                      case "A":
+                        this.rightIdx = 0;
+                        break;
+                      case "B":
+                        this.rightIdx = 1;
+                        break;
+                      case "C":
+                        this.rightIdx = 2;
+                        break;
+                      case "D":
+                        this.rightIdx = 3;
+                        break;
+                    }
+                    //答题倒计时
+                    this.timer = setInterval(() => {
+                      this.progress -= 0.1;
+                      this.time -= 0.01;
+                      if (this.time <= 0.01) {
+                        this.time--;
+                        this.currError = true;
+                        this.chooseIdx = 100;
+
+                        //存储 答题信息
+                        let answerOk = "N";
+                        let answer = "";
+                        this.testResult.records.push({
+                          id: id,
+                          answer: answer,
+                          answerOk: answerOk
+                        });
+                        console.log(
+                          "--------------倒计时停止-this.testResult",
+                          this.testResult
+                        );
+                        clearInterval(this.timer);
+                        this.errorN++;
+                        this.noAnswer++;
+                        this.next();
+                      }
+                    }, 10);
+                  }
+                },
+                err => {}
+              );
+            }
+          },
+          err => {}
+        );
+    },
+    //判断选择对错
+    check: function(currWord, index) {
+      // console.log("-------check-index", index);
+      // console.log("-------this.nowWord", this.nowWord);
+      // console.log("-------currWord", currWord);
+      //防止重复点击
+      if (this.chooseIdx !== -1) {
+        return;
+      }
+      let n = "";
+      switch (index) {
+        case 0:
+          n = "A";
+          break;
+        case 1:
+          n = "B";
+          break;
+        case 2:
+          n = "C";
+          break;
+        case 3:
+          n = "D";
+          break;
+      }
+      let id = this.wordList[this.curr].id + "";
+
+      //当所点击的正确时
+      if (currWord.correct == n) {
+        console.log("-------选对");
+
+        // 存储答题信息
+        let answerOk = "Y";
+        let answer = n;
+        this.testResult.records.push({
+          id: id,
+          answer: answer,
+          answerOk: answerOk
+        });
+
+        console.log("----选对-----this.testResult", this.testResult);
+
+        this.chooseIdx = index;
+        this.rightN++;
+        if (this.timer) {
+          clearInterval(this.timer);
+        }
+        this.next();
+      } else {
+        console.log("-------选错");
+
+        // 存储答题信息
+        let answerOk = "N";
+        let answer = n;
+        this.testResult.records.push({
+          id: id,
+          answer: answer,
+          answerOk: answerOk
+        });
+
+        console.log("----选错-----this.testResult", this.testResult);
+
+        this.chooseIdx = index;
+        this.currError = true;
+        this.currError2 = true;
+        this.errorN++;
+        if (this.timer) {
+          clearInterval(this.timer);
+        }
+        this.oneTimer = setTimeout(() => {
+          clearTimeout(this.oneTimer);
+          this.oneTimer = null;
+          this.next();
+        }, 3000);
+      }
+    },
+    //下一个
+    next: function() {
+      this.nextTimer = setTimeout(() => {
+        this.time = 10;
+        this.progress = 100;
+        this.progressMain += 100 / this.wordList.length;
+        this.chooseIdx = -1;
+        this.currError = false;
+        this.currError2 = false;
+        // console.log("-------this.curr", this.curr);
+        // console.log("-----------this.wordList.length", this.wordList.length);
+        if (this.curr + 1 >= this.wordList.length) {
+          this.percent = this.rightN / this.wordList.length;
+          console.log("-----------正确率", this.percent);
+
+          //计算分数
+          let typeScore = 211;
+          let score = parseInt(
+            typeScore *
+              (this.rightN +
+                this.noAnswer * 0.25 -
+                0.35 * this.wordList.length) /
+              0.65
+          );
+          if(score<=0){
+            score=0;
+          }
+          this.testResult.score = score + "";
+
+          this.isOver = true;
+          this.getTime();
+          console.log("结束");
+          //提交测试成绩
+          console.log("------提交测试成绩", this.testResult);
+          let testResult=JSON.stringify(this.testResult);
+          testResult=Base64.encode(testResult);
+          console.log("-------json--base64",testResult);
+          dataService.postParper(testResult).then(
+            res=>{
+              console.log("--------提交成绩-res",res);
+            },
+            err=>{
+
+            }
+          );
+        } else {
+          this.curr++;
+          this.nowWord = this.wordList[this.curr].word;
+
+          let n = this.wordList[this.curr].correct;
+          let id = this.wordList[this.curr].id + "";
+          switch (n) {
+            case "A":
+              this.rightIdx = 0;
+              break;
+            case "B":
+              this.rightIdx = 1;
+              break;
+            case "C":
+              this.rightIdx = 2;
+              break;
+            case "D":
+              this.rightIdx = 3;
+              break;
+          }
+          
+          //答题倒计时
+          this.timer = setInterval(() => {
+            this.progress -= 0.1;
+            this.time -= 0.01;
+            if (this.time <= 0.01) {
+              this.time--;
+              this.currError = true;
+              this.chooseIdx = 100;
+
+              //存储 答题信息
+              let answerOk = "N";
+              let answer = "";
+              this.testResult.records.push({
+                id: id,
+                answer: answer,
+                answerOk: answerOk
+              });
+              console.log(
+                "--------------倒计时停止-this.testResult",
+                this.testResult
+              );
+
+              clearInterval(this.timer);
+              this.errorN++;
+              this.noAnswer++;
+              this.next();
+            }
+          }, 10);
+        }
+      }, 1000);
+    },
+    //暂停
+    pause: function() {
+      if (this.btnText == "暂停") {
+        console.log("---------暂停");
+        this.btnText = "继续测试";
+        if (this.oneTimer) {
+          clearTimeout(this.oneTimer);
+        }
+        if (this.nextTimer) {
+          clearTimeout(this.nextTimer);
+        }
+      } else {
+        console.log("---------继续测试");
+        this.btnText = "暂停";
+        this.next();
+      }
+    },
+    //获取当前测试结束时间
+    getTime: function() {
+      let date = new Date();
+      let month = date.getMonth() + 1;
+      let strDate = date.getDate();
+      let seconds = date.getSeconds();
+      if (month >= 1 && month <= 9) {
+        month = "0" + month;
+      }
+      if (strDate >= 0 && strDate <= 9) {
+        strDate = "0" + strDate;
+      }
+      if (seconds >= 0 && seconds <= 9) {
+        seconds = "0" + seconds;
+      }
+      let currentdate =
+        date.getFullYear() +
+        month +
+        strDate +
+        date.getHours() +
+        date.getMinutes() +
+        seconds;
+      this.testResult.finishTime = currentdate;
+      console.log("------------结束时间", this.testResult);
+    }
+  },
+  beforeDestroy(){
+    if(this.timer){
+      clearInterval(this.timer);
+    }
+    if(this.oneTimer){
+      clearTimeout(this.oneTimer);
+    }
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.wordTest {
+  width: 100%;
+  height: 100%;
+  .clear {
+    content: "";
+    display: block;
+    clear: both;
+  }
+  .wordTest-container {
+    width: 100%;
+    // height: 100%;
+    .test-top {
+      height: 80px;
+      line-height: 80px;
+      display: flex;
+      justify-content: space-around;
+      padding: 20px 0;
+      .test-lv {
+        font-size: 18px;
+      }
+      .el-progress {
+        width: 600px;
+        line-height: inherit;
+        .el-progress__text {
+          display: none;
+        }
+        .el-progress-bar {
+          padding-right: 0;
+        }
+      }
+      .test-res {
+        width: 205px;
+        p {
+          display: inline-block;
+          margin: 0 10px;
+        }
+        .test-right {
+          color: #56bdff;
+        }
+        .test-err {
+          color: #ff7676;
+        }
+      }
+      .test-again {
+        height: 40px;
+        margin: auto 0;
+      }
+    }
+    .test-main {
+      width: 700px;
+      margin: 0 auto;
+      .word-content {
+        width: 70%;
+        text-align: center;
+        margin: 0 auto;
+        .test-word {
+          font-size: 60px;
+          color: #55bdfd;
+        }
+        .progress {
+          margin: 10px 0;
+        }
+      }
+      .content-container {
+        position: relative;
+        margin-top: 30px;
+        min-height: 360px;
+        .word-list {
+          position: absolute;
+          list-style: none;
+          width: 100%;
+          padding: 10px 30px;
+          box-sizing: border-box;
+          .item-container {
+            height: 55px;
+            padding: 10px 0;
+            margin-bottom: 10px;
+            position: relative; //配合 对错号 做定位
+            .word-item {
+              height: 100%;
+              text-align: center;
+              display: flex;
+              justify-content: flex-start;
+              align-items: center;
+              border: 2px #ddd solid;
+              border-radius: 10px;
+              padding: 0 50px;
+              p {
+                margin-left: 20px;
+              }
+            }
+            img {
+              position: absolute;
+              right: -30px;
+              top: 25px;
+              width: 25px;
+            }
+          }
+        }
+      }
+    }
+    .test-score {
+      width: 700px;
+      margin: 20px auto;
+      text-align: center;
+      .test-score-title {
+        font-size: 25px;
+        color: #60baf1;
+        margin: 20px 0;
+      }
+      .test-score-face {
+        width: 180px;
+        margin: 30px 0;
+      }
+      .test-score-text {
+        font-size: 20px;
+        font-weight: bold;
+        margin: 20px 0;
+      }
+    }
+    .pauseBtn {
+      width: 100px;
+      float: right;
+      margin-right: 100px;
+    }
+  }
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: all 0.5s;
+  }
+  .fade-enter,
+  .fade-leave-active {
+    opacity: 0;
+  }
+  .fade-enter {
+    transform: translateX(680px);
+  }
+  .fade-leave-active {
+    transform: translateX(-680px);
+  }
+  .right-active {
+    background: #0fe573;
+    color: #f7f7f7;
+  }
+  .error-active {
+    background: #ff7676;
+    color: #f7f7f7;
+  }
+  .right-active-two {
+    background: #0fe573;
+    color: #f7f7f7;
+  }
+  .right-active-three {
+    background: #efeff4;
+    color: #000;
+    border: 2px solid #0fe573 !important;
+  }
+}
+</style>

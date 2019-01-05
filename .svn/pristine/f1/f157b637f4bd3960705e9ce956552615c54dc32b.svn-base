@@ -1,0 +1,99 @@
+import Vue from "vue";
+import Router from "vue-router";
+
+Vue.use(Router);
+// 登录
+import login from "@/pages/person/login.vue";
+// 注册
+import regist from "@/pages/person/regist.vue";
+// 忘记密码
+import forgetPwd from "@/pages/person/forgetPwd.vue";
+// 词汇测试
+import wordTest from "@/pages/wordTest/wordTest.vue";
+// 课程中心、
+import courseCenter from "@/pages/courseCenter/courseCenter.vue";
+// 学习中心
+import learnCenter from "@/pages/learnCenter/learnCenter.vue";
+//生词本
+import unKnowWord from "@/pages/wordTest/unKnowWord.vue";
+//生词详情
+import unKnowDetail from '@/pages/wordTest/unKnowDetail.vue'
+
+// 学习首页
+import learnIndex from '@/pages/learnIndex/learnIndex.vue'
+// 学习统计
+import learnStatistics from '@/pages/learnStatistics.vue'
+// 个人中心
+import person from "@/pages/personCenter/personCenter.vue";
+// 测试成绩
+import testResult from "@/pages/personCenter/children/testResult.vue";
+// 测试详情
+import testResultDetail from "@/pages/personCenter/children/testResultDetail.vue";
+export default new Router({
+    routes: [{
+            path: "/",
+            name: "login",
+            component: login
+        },
+        {
+            path: "/person",
+            name: "person",
+            component: person
+        },
+        {
+            path: "/testResult",
+            name: "testResult",
+            component: testResult
+        },
+        {
+            path: "/testResultDetail",
+            name: "testResultDetail",
+            component: testResultDetail
+        },
+        {
+            path: "/regist",
+            name: "regist",
+            component: regist
+        },
+        {
+            path: "/forgetPwd",
+            name: "forgetPwd",
+            component: forgetPwd
+        },
+        {
+            path: "/wordTest",
+            name: "wordTest",
+            component: wordTest
+        },
+
+        {
+            path: "/learnIndex",
+            name: "learnIndex",
+            component: learnIndex
+        },
+        {
+            path: "/unKnowWord",
+            name: "unKnowWord",
+            component: unKnowWord
+        },
+        {
+            path: "/courseCenter",
+            name: "courseCenter",
+            component: courseCenter
+        },
+        {
+            path: "/learnCenter",
+            name: "learnCenter",
+            component: learnCenter
+        },
+        {
+            path: "/unKnowDetail",
+            name: "unKnowDetail",
+            component: unKnowDetail
+        }, {
+            path: "/learnStatistics",
+            name: "learnStatistics",
+            component: learnStatistics
+        }
+    ]
+});

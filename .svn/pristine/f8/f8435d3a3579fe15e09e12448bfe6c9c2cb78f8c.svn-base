@@ -1,0 +1,75 @@
+<template>
+    <div class='learnFooter'>
+           <p v-show="learnPlan.columnNeedReview==='N'" class="learnP">
+                本组进度 ( {{learnPlan.columnPlan}} -
+                <i class="haveLearned">{{learnPlan.learnWord}}</i>)
+                生词 ( <i class="newWord">{{learnPlan.newWord}}</i> )
+                课程总进度 ( {{learnPlan.totalWord +"-"+ learnPlan.sumPlan}} ) 总生词 ( {{learnPlan.sumNewword}} )
+           </p>
+           <p v-show="learnPlan.columnNeedReview==='Y'" class="goOver">
+                <i class='capacity'> 智能复习中... </i> ( {{learnPlan.columnreviewPlan}} - <i class="haveLearned">{{learnPlan.columnreviewLearn}}</i>  )
+           </p>
+            <p v-show="learnPlan.columnNeedReview==='preview'" class="goOver">
+                <i class='capacity'> 快速预览中...{{learnPlan.name}} </i> ( {{learnPlan.columnPlan}} - <i class="haveLearned">{{learnPlan.learnWord}}</i>  )
+           </p>
+    </div>
+</template>
+<script>
+export default {
+    props:{
+        fonterData:{
+            type:Object
+        }
+    },
+    components: {
+    },
+    data(){
+        return{
+            learnPlan:{},
+        }
+    },
+    methods:{
+
+    },
+    mounted(){
+
+    },
+    watch:{
+        fonterData(val){
+            console.log(val)
+            this.learnPlan=val
+            console.log(val.columnNeedReview)
+        }
+    },
+    computed: {
+
+    },
+};
+</script>
+
+<style lang="scss" scoped>
+.learnFooter{
+    position:fixed;
+    left:0px;
+    bottom:0px;
+    height:40px;
+    line-height:40px;
+    background: #707071;
+    width:100%;
+    z-index:30;
+    text-align:center;
+    color:#fff;
+    i{
+        font-style: normal;
+    }
+    .haveLearned{
+        color:#5CACDF;
+    }
+    .newWord{
+        color: #DC7475;
+    }
+    .capacity{
+        color:#FDC009;
+    }
+}
+</style>

@@ -1,0 +1,13 @@
+import _ from 'lodash'
+import test from './pageService/test'
+import learnIndex from './pageService/learnIndex'
+import auth from './pageService/auth'
+import person from "./pageService/person";
+
+export default _.merge(
+    test,
+    learnIndex,
+    auth,
+    person
+);
+export default _.merge(test, auth, person, learnIndex);

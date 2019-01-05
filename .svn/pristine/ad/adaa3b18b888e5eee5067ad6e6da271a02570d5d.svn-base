@@ -1,0 +1,355 @@
+<template>
+	<div class="regist">
+    <div class="regist-top">
+      <router-link to='/'>
+        <img src="static/images/logo.png" alt="">
+      </router-link>
+    </div>
+    <div class="regist-container">
+      <el-tabs type="border-card" class="regist-content" @tab-click="changeTap">
+        <el-tab-pane label="手机号注册">
+          <el-form :model="userForm" ref="userForm" :rules="rules" label-width="100px" class="demo-ruleForm">
+            <el-form-item  prop="userName" >
+              <img src="static/images/zhanghu.png" alt="">
+              <el-input type="text" placeholder="请输入您所要注册的手机号" v-model="userForm.userName" auto-complete="off"></el-input>
+              <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+            </el-form-item>
+            <el-form-item  prop="pwd" >
+              <img src="static/images/mima.png" alt="">
+              <el-input type="text" placeholder="请输入6-16位密码" v-model="userForm.pwd" auto-complete="off" @keyup.enter.native="submitForm"></el-input>
+              <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+            </el-form-item> 
+            <el-form-item  prop="captcha" >
+              <img src="static/images/yanzheng.png" alt="">
+              <el-input type="text" placeholder="请输入验证码" v-model="userForm.captcha" auto-complete="off" @keyup.enter.native="submitForm"></el-input>
+              <el-button type="primary" @click="getCode" v-show="!isCountDown">{{btnText}}</el-button>
+              <el-button type="primary" v-show="isCountDown">{{time+'s'}}</el-button>
+            </el-form-item>
+          </el-form> 
+        </el-tab-pane>
+        <el-tab-pane label="邮箱注册">
+          <el-form :model="userForm" ref="userForm" :rules="rules" label-width="100px" class="demo-ruleForm">
+            <el-form-item  prop="userName" >
+              <img src="static/images/zhanghu.png" alt="">
+              <el-input type="text" placeholder="请输入您所要注册的邮箱" v-model="userForm.userName" auto-complete="off"></el-input>
+              <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+            </el-form-item>
+            <el-form-item  prop="pwd" >
+              <img src="static/images/mima.png" alt="">
+              <el-input type="text" placeholder="请输入6-16位密码" v-model="userForm.pwd" auto-complete="off" @keyup.enter.native="submitForm"></el-input>
+              <el-button type="primary" style="visibility:hidden">辅助布局用</el-button>
+            </el-form-item> 
+          </el-form> 
+        </el-tab-pane>
+      </el-tabs>        
+      <el-button type="primary" class="regist-btn" :loading="btnLoading" @click="submitForm">立即注册</el-button>
+    </div>
+	</div>
+</template>
+<script>
+import dataService from "@/service/index";
+
+export default {
+  mounted() {},
+  data() {
+    //验证手机号
+    let myPhone = /^[1][3,4,5,7,8][0-9]{9}$/;
+    //验证邮箱
+    let myMail = new RegExp(
+      "^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$"
+    );
+    //验证密码
+    let myPwd = /^[\w]{6,12}$/;
+    //验证 验证码
+    let myCode = /^\d{6}$/;
+
+    var userName = (rule, value, callback) => {
+      console.log("---------val", value);
+      if (this.isPhone) {
+        if (value === "") {
+          callback(new Error("请输入手机号"));
+        } else {
+          console.log("----------手机");
+          if (!myPhone.test(value)) {
+            callback(new Error("您输入的手机格式不正确"));
+            this.isUserName = false;
+          } else {
+            this.registerType = "MOBILE";
+            this.isUserName = true;
+            callback();
+          }
+        }
+      } else {
+        if (value === "") {
+          callback(new Error("请输入邮箱"));
+        } else {
+          console.log("----------邮箱");
+          if (!myMail.test(value)) {
+            callback(new Error("您输入的邮箱格式不正确"));
+          } else {
+            this.registerType = "EMAIL";
+            callback();
+          }
+        }
+      }
+    };
+
+    var pwd = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入密码"));
+      } else if (!myPwd.test(value)) {
+        callback(
+          new Error(
+            "您输入的密码格式有误，正确的密码格式为 6-12 位 数字 + 字母 组成"
+          )
+        );
+      }
+    };
+
+    var captcha = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入验证码"));
+      } else if (!myCode.test(value)) {
+        callback(new Error("验证码格式输入有误"));
+      }
+    };
+    return {
+      btnLoading: false, //加载圈
+      isUserName: false, //判断账户名输入是否正确
+      isCountDown: false, //是否转换倒计时按钮
+      isPhone: true, //判断是否是手机号登陆
+      btnText: "获取验证码",
+      time: 60,
+      registerType: "", //注册类型
+      captchaKey: "", //验证码key
+      message: "", //提示消息
+      userForm: {
+        userName: "",
+        pwd: "",
+        captcha: ""
+      },
+      rules: {
+        userName: [
+          {
+            validator: userName,
+            trigger: "blur"
+          }
+        ],
+        pwd: [
+          {
+            validator: pwd,
+            trigger: "blur"
+          }
+        ],
+        captcha: [
+          {
+            validator: captcha,
+            trigger: "blur"
+          }
+        ]
+      }
+    };
+  },
+
+  methods: {
+    changeTap() {
+      if (this.isPhone) {
+        this.isPhone = false;
+        console.log("--------是否是手机号", this.isPhone);
+      } else {
+        this.isPhone = true;
+        console.log("--------是否是手机号", this.isPhone);
+      }
+    },
+    //点击 获取验证码 按钮
+    getCode() {
+      if (this.isUserName) {
+        if (this.btnText == "获取验证码") {
+          this.submitCode();
+        } else {
+          this.time = 60;
+          this.submitCode();
+        }
+      } else {
+        if (this.userForm.userName === "") {
+          this.$message({
+            message: "请输入手机号/邮箱",
+            type: "warning"
+          });
+        }
+      }
+    },
+    //获取验证码
+    submitCode() {
+      this.isCountDown = true;
+      let timer = setInterval(() => {
+        this.time--;
+        if (this.time <= 1) {
+          this.isCountDown = false;
+          this.btnText = "重新发送";
+          clearInterval(timer);
+        }
+      }, 1000);
+      dataService.sendCaptcha("REGISTER", this.userForm.userName).then(res => {
+        console.log("---------发送验证码-res", res);
+        let code = res.data.code;
+        let msg = res.data.msg;
+        if (code == 200) {
+          this.captchaKey = res.data.data.captchaKey;
+          this.message = "验证码已发送！";
+          this.openSucess();
+        }else if (code == 500) {
+          this.message = msg;
+          this.openErr();
+        }
+      });
+    },
+    //点击 注册 按钮
+    submitForm() {
+      // console.log("----------userForm.userName", this.userForm.userName);
+      // console.log("----------userForm.pwd", this.userForm.pwd);
+      // console.log("----------userForm.captcha", this.userForm.captcha);
+      this.btnLoading = true;
+      dataService
+        .register(
+          this.registerType,
+          this.userForm.userName,
+          this.userForm.pwd,
+          this.userForm.captcha,
+          this.captchaKey
+        )
+        .then(
+          res => {
+            console.log("------注册--res", res);
+            this.btnLoading = false;
+            let code = res.data.code;
+            let msg = res.data.msg;
+            if (code == 200) {
+              localStorage.setItem("userName", this.userForm.userName);
+              this.message = "注册成功";
+              this.openSucess();
+              setTimeout(() => {
+                this.$router.push({ name: "login" });
+              }, 3000);
+            } else if (code == 500) {
+              if (msg == "缺少必要参数") {
+                this.message = "您输入的信息有误！";
+              } else {
+                this.message = msg;
+              }
+              this.openErr();
+            } 
+          },
+          err => {
+            this.btnLoading = false;
+            // this.message = "网络连接超时！";
+            // this.openErr();
+          }
+        );
+    },
+    openErr() {
+      this.$message({
+        message: this.message,
+        type: "error"
+      });
+    },
+    openSucess() {
+      this.$message({
+        message: this.message,
+        type: "success"
+      });
+    }
+  }
+};
+</script>
+<style lang="scss">
+.regist {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  .regist-top {
+    width: 100%;
+    height: 400px;
+    background-image: url(../../assets/images/bg.png);
+    background-size: 100% 100%;
+  }
+  .regist-container {
+    position: absolute;
+    top: 230px;
+    left: 0;
+    right: 0;
+    width: 650px;
+    min-height: 200px;
+    margin: 0 auto;
+    text-align: center;
+    .regist-content {
+      height: 380px;
+      box-shadow: none;
+    }
+    .el-tabs {
+      border-radius: 15px;
+      border: none;
+      overflow: hidden;
+    }
+    .el-tabs__nav {
+      float: none;
+    }
+    .el-tabs__item {
+      width: 50%;
+      height: 60px;
+      line-height: 60px;
+      background: #56bdff;
+      color: #f7f7f7;
+      font-size: 18px;
+      margin: 0;
+    }
+    .regist-text {
+      color: #f7f7f7;
+    }
+    .user-head {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      padding: 10px;
+      background: #f7f7f7;
+      margin: 30px 0;
+    }
+    .demo-ruleForm {
+      padding: 20px 10px;
+      img {
+        vertical-align: middle;
+        width: 20px;
+      }
+      .el-form-item__content {
+        margin-left: 0 !important;
+        padding: 10px 0;
+        border-bottom: 1px solid #56bdff;
+        .el-input {
+          width: 70%;
+          .el-input__inner {
+            width: 95%;
+            height: 40px;
+            border: none;
+          }
+        }
+        .el-button {
+          width: 120px;
+          margin: 0;
+        }
+      }
+      input::-ms-input-placeholder {
+        text-align: center;
+      }
+      input::-webkit-input-placeholder {
+        text-align: center;
+      }
+    }
+    .regist-btn {
+      width: 100%;
+      height: 50px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+  }
+}
+</style>

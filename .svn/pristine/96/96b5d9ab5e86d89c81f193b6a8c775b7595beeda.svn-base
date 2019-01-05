@@ -1,0 +1,144 @@
+<template>
+  <div class="changeInfo-center">
+    <el-dialog :visible.sync="dialogShow" @close="dialogHide" width="30%" title="修改个人资料">
+      <el-form :model="infoForm" :rules="rules" ref="infoForm" label-width="100px">
+        <el-form-item label="姓名：" prop="name">
+          <el-input clearable placeholder="请输入姓名" v-model="infoForm.name" type="text"></el-input>
+        </el-form-item>
+        <el-form-item label="年级：" prop="grade">
+          <el-select clearable v-model="infoForm.grade">
+            <el-option v-for="item in grade" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="性别：" prop="sex">
+          <el-radio-group v-model="infoForm.sex">
+            <el-radio label="女" value="FEMALE"></el-radio>
+            <el-radio label="男" value="MALE"></el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="地区：" prop="province">
+          <el-select placeholder="请选择省/直辖市/自治区" v-model="infoForm.province">
+            <el-option></el-option>
+          </el-select>
+          <el-select placeholder="请选择所在市/自治州" v-model="infoForm.city">
+            <el-option></el-option>
+          </el-select>
+          <el-select placeholder="请选择所在县/区" v-model="infoForm.county">
+            <el-option></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="生日：" prop="birthday">
+          <el-date-picker type="datetime" v-model="infoForm.birthday" placeholder="选择日期时间">
+          </el-date-picker>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="resetForm('infoForm')">取消</el-button>
+        <el-button type="primary" @click="submitForm('infoForm')">确定</el-button>
+      </div>
+    </el-dialog>
+
+  </div>
+</template>
+
+<script>
+import { GRADLE } from "../../utility/dict.js";
+import dataService from "@/service/index";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+      console.log(val);
+    }
+  },
+  data() {
+    return {
+      diqu: "",
+      grade: GRADLE,
+      dialogShow: false,
+      infoForm: {
+        name: "",
+        grade: "",
+        sex: "",
+        province: "",
+        city: "",
+        county: "",
+        birthday: ""
+      },
+      rules: {
+        name: [{ required: true, message: "请输入姓名", trigger: "change" }],
+        grade: [{ required: true, message: "请选择年级", trigger: "change" }],
+        sex: [{ required: true, message: "请选择性别", trigger: "change" }],
+        province: [{ required: true, message: "请选择省份", trigger: "blur" }],
+        city: [
+          { required: true, message: "请选择所在城市", trigger: "change" }
+        ],
+        county: [
+          { required: true, message: "请选择所在县/区", trigger: "change" }
+        ],
+        birthday: [{ required: true, message: "请选择生日", trigger: "change" }]
+      }
+    };
+  },
+  methods: {
+    //     PROVINCE：省
+    // CITY：市
+    // DISTRICT：县、区
+
+    getProvince() {
+      this.diqu = PROVINCE;
+      dataService.changePass(this.diqu, "").then(res => {
+        let result = res.data;
+        let data = result.data;
+        let code = result.code;
+        let msg = result.msg;
+        if(code==200){
+          console.log(data)
+        }
+      });
+    },
+    submitForm(formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          // alert("submit!");
+          console.log("formName", this.infoForm);
+          this.$parent.name = this.infoForm.name;
+          console.log;
+          this.dialogShow = false;
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+      this.dialogShow = false;
+    },
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    }
+  }
+};
+</script>
+<style lang="scss">
+.changeInfo-center {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: #ebeef5;
+
+  .el-dialog__header {
+    background: #66b1ff;
+  }
+  .el-form-item__error {
+    left: 65px;
+  }
+}
+</style>

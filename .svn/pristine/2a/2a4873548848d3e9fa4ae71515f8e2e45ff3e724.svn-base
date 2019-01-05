@@ -1,0 +1,128 @@
+<template>
+  <div>
+    <el-dialog :visible.sync="dialogShow" @close="dialogHide" width="30%" append-to-body title="修改密码">
+      <el-form class="form-inline" label-width="145px" :model="passForm" :rules="passRule" ref="passForm">
+        <el-form-item label="原密码：" prop="oldPwd">
+          <el-input type="password" clearable v-model="passForm.oldPwd" placeholder="请输入原密码"></el-input>
+        </el-form-item>
+        <el-form-item label="新密码：" prop="newPwd">
+          <el-input type="password" clearable v-model="passForm.newPwd" placeholder="请输入新密码"></el-input>
+        </el-form-item>
+        <el-form-item label="再次确认：" prop="newPwd1">
+          <el-input type="password" clearable v-model="passForm.newPwd1" placeholder="请再次确认密码"></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="resetForm('passForm')">取消</el-button>
+        <el-button type="primary" @click="submitForm('passForm')">确定</el-button>
+      </div>
+
+    </el-dialog>
+  </div>
+</template>
+
+<script>
+import dataService from "@/service/index";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+      console.log(val);
+    }
+  },
+  data() {
+    var validateOldPwd = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入旧密码"));
+      } else {
+        callback();
+      }
+    };
+    var validatePass = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入新密码"));
+      } else {
+        if (this.passForm.newPwd1 !== "") {
+          this.$refs.passForm.validateField("newPwd1");
+        }
+        callback();
+      }
+    };
+    var validatePass2 = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请再次输入密码"));
+      } else if (value !== this.passForm.newPwd) {
+        callback(new Error("两次输入密码不一致!"));
+      } else {
+        callback();
+      }
+    };
+    return {
+      dialogShow: false,
+      passForm: {
+        oldPwd: "",
+        newPwd: "",
+        newPwd1: ""
+      },
+      passRule: {
+        oldPwd: [
+          {
+            required: true,
+            validator: validateOldPwd,
+            trigger: "blur"
+          }
+        ],
+        newPwd: [
+          {
+            required: true,
+            validator: validatePass,
+            trigger: "blur"
+          }
+        ],
+        newPwd1: [
+          {
+            required: true,
+            validator: validatePass2,
+            trigger: "blur"
+          }
+        ]
+      }
+    };
+  },
+  methods: {
+    submitForm(formName) {
+      this.$refs[formName].validate(valid => {
+        if (valid) {
+          alert("submit!");
+          this.dialogShow = false;
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
+    },
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    },
+    resetForm(formName) {
+      this.$refs[formName].resetFields();
+      this.dialogShow = false;
+    }
+  }
+};
+</script>
+
+
+<style lang="scss">
+.el-dialog__header {
+  background: #66b1ff;
+}
+</style>
+
+

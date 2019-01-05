@@ -1,0 +1,11 @@
+import reqUrl from "../urlConfig";
+import fetch from "@/utility/http";
+let getBookList = (page, size, bookSort, bookType) =>
+    fetch(reqUrl.GET_BOOK_LIST, {
+        page: page,
+        size: size || "",
+        bookSort: bookSort || "",
+        bookType: bookType || ""
+    });
+
+export default { getBookList };

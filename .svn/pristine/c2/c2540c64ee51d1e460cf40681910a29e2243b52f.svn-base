@@ -1,0 +1,18 @@
+import reqUrl from "../urlConfig";
+import fetch from "@/utility/http";
+//创建试卷
+let createParper = (examType, size, bookNo, grande) =>
+    fetch(reqUrl.CREATE_PARPER, {
+        examType: examType,
+        size: size,
+        bookNo: bookNo,
+        grande: grande,
+    }, 'POST');
+
+//提交试卷
+let postParper = (data) =>
+    fetch(reqUrl.POST_PARPER, {
+        data: data,
+    }, 'POST');
+
+export default { createParper, postParper };

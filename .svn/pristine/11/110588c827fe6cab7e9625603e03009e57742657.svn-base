@@ -1,0 +1,8 @@
+export default function(apiRoot) {
+    return {
+        GET_BOOK_LIST: apiRoot + "/book/list",
+        DOWN_BOOK: apiRoot + "/bookDownload/mark",
+        GET_DOWNBOOK_LIST: apiRoot + "/book/downloadList",
+        GET_UNKNOWN_WORD: apiRoot + "/word/notes"
+    };
+}

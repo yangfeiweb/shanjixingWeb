@@ -1,0 +1,337 @@
+<template>
+  <div class="testResult">
+    <nav-header class="testResult-header">
+      <span slot="title">测试成绩</span>
+    </nav-header>
+    <div class="resultContainer">
+      <ul class="listContainer" v-for="(item,index) in dataList" :key="index">
+        <li class="list-item">
+          <p class="indexNo">{{index+1}}</p>
+          <p class="startTime">{{item.startTime}}</p>
+          <p class="name">{{item.name}}</p>
+          <div class="answerNo">
+            <p>共 {{item.total}} 题</p>
+            <p>对 {{item.rightCount}} 题</p>
+            <p>错 {{item.errorCount}} 题</p>
+          </div>
+          <!-- <p>用时：{{item.time}}</p> -->
+          <p class="useTime">用时：{{item.useTime}}</p>
+          <p class="score" v-if="item.examType== 'learn_before_test'||item.examType== 'learn_after_test'">{{item.score}}分</p>
+          <p class="score" v-if="item.examType== 'word_test'">词汇量：{{item.score}}个</p>
+          <div class="btnGroup">
+            <el-button v-if="item.examType== 'learn_before_test'||item.examType== 'learn_after_test'" type="text" @click="checkDetail(dataList[index])">查看</el-button>
+            <i class="shu" v-if="item.examType== 'learn_before_test'||item.examType== 'learn_after_test'">|</i>
+            <el-button type="text" @click="delBtn">删除</el-button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import index from "vue";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      dataList2: [
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:42:21",
+          id: 1,
+          name: "新课标小学英语单词体验版 认读（体验版01-学前测试）",
+          rightCount: 4,
+          score: 10,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "word_test",
+          finishedTime: "2018-04-20 09:43:21",
+          id: 2,
+          name: "新课标小学英语单词体验版 认读（体验版02-学前测试）",
+          rightCount: 4,
+          score: 20,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_after_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 3,
+          name: "新课标小学英语单词体验版 认读（体验版03-学前测试）",
+          rightCount: 4,
+          score: 30,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:50",
+          id: 4,
+          name: "新课标小学英语单词体验版 认读（体验版04-学前测试）",
+          rightCount: 4,
+          score: 40,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "word_test",
+          finishedTime: "2018-04-20 09:50:21",
+          id: 5,
+          name: "新课标小学英语单词体验版 认读（体验版05-学前测试）",
+          rightCount: 4,
+          score: 50,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_after_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 6,
+          name: "新课标小学英语单词体验版 认读（体验版06-学前测试）",
+          rightCount: 4,
+          score: 60,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 7,
+          name: "新课标小学英语单词体验版 认读（体验版07-学前测试）",
+          rightCount: 4,
+          score: 70,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "word_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 8,
+          name: "新课标小学英语单词体验版 认读（体验版08-学前测试）",
+          rightCount: 4,
+          score: 80,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 9,
+          name: "新课标小学英语单词体验版 认读（体验版09-学前测试）",
+          rightCount: 4,
+          score: 90,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 10,
+          name: "新课标小学英语单词体验版 认读（体验版10-学前测试）",
+          rightCount: 4,
+          score: 100,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 11,
+          name: "新课标小学英语单词体验版 认读（体验版11-学前测试）",
+          rightCount: 4,
+          score: 110,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:40:21",
+          id: 12,
+          name: "新课标小学英语单词体验版 认读（体验版12-学前测试）",
+          rightCount: 4,
+          score: 120,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        },
+        {
+          errorCount: 16,
+          examType: "learn_before_test",
+          finishedTime: "2018-04-20 09:42:21",
+          id: 13,
+          name: "新课标小学英语单词体验版 认读（体验版13-学前测试）",
+          rightCount: 4,
+          score: 130,
+          startTime: "2018-04-20 09:40:21",
+          status: "",
+          studentNo: "979300178135650305",
+          total: 20
+        }
+      ],
+    };
+  },
+  computed:{
+    dataList:function(){
+      let newArray=this.dataList2;
+      newArray.forEach(e=>{
+        // 计算测试用时
+        let date1 = new Date(
+          e.startTime.replace(/\-/g, "/")
+        );
+        let date2 = new Date(
+          e.finishedTime.replace(/\-/g, "/")
+        );
+        let s1 = date1.getTime();
+        let s2 = date2.getTime();
+        let totalTime = (s2 - s1) / 1000;
+        let day = parseInt(totalTime / (24 * 60 * 60)); //计算整数天数
+        let afterDay = totalTime - day * 24 * 60 * 60; //取得算出天数后剩余的秒数
+        let hour = parseInt(afterDay / (60 * 60)); //计算整数小时数
+        let afterHour = totalTime - day * 24 * 60 * 60 - hour * 60 * 60; //取得算出小时数后剩余的秒数
+        let min = parseInt(afterHour / 60); //计算整数分
+        let afterMin = totalTime - day * 24 * 60 * 60 - hour * 60 * 60 - min * 60;
+        e.useTime=min+"分"+afterMin+"秒";
+      });
+      return newArray;
+    }
+  },
+  methods: {
+    delBtn() {
+      this.$confirm(
+        "确认删除这条测试记录吗？删除后不可恢复，请谨慎选择！",
+        "提示",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+          center: true
+        }
+      )
+        .then(() => {
+          this.$message({
+            type: "success",
+            message: "删除成功!"
+          });
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
+    },
+    checkDetail(data) {
+      console.log("--------点击的内容", data);
+      this.$router.push({
+        name: "testResultDetail",
+        params: {
+          data: data
+        }
+      });
+    }
+  }
+};
+</script>
+
+<style lang="scss">
+.testResult {
+  width: 100%;
+  .testResult-header {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  .resultContainer {
+    margin-top: 70px;
+    padding: 10px;
+    font-size: 18px;
+    .listContainer {
+      width: 100%;
+      .list-item {
+        min-height: 100px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        text-align: center;
+        border-bottom: 1px solid #eaeaea;
+        .indexNo{
+          width:30px;
+        }
+        .startTime {
+          width: 100px;
+        }
+        .name {
+          width: 500px;
+          color: #41a0cd;
+        }
+        .useTime {
+          width: 150px;
+        }
+        .answerNo {
+          width: 200px;
+          display: flex;
+          justify-content: space-around;
+        }
+        .score {
+          width:130px;
+          color: #fa1c2c;
+        }
+        .btnGroup {
+          width: 100px;
+          text-align: right;
+          .el-button--text {
+            font-size: 18px;
+          }
+          .shu {
+            color: #409eff;
+          }
+        }
+      }
+    }
+  }
+}
+</style>

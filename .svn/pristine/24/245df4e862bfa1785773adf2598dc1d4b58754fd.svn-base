@@ -1,0 +1,121 @@
+<template>
+    <div>
+        <el-dialog :visible.sync="dialogShow" @close="dialogHide" title="修改头像" center>
+            <div style="height:500px;width:100%;position:relative">
+                <el-tabs v-model="activeName2" type="card">
+                    <el-tab-pane label="本地头像" name="first">
+                        <div style="width:100%;height:420px;overflow-y:scroll">
+                            <div v-for="(item,index) in  Icons" :key="item" style="width:50px;height:50px;float:left;margin:10px">
+                                <img :src="item" style="width:100%;float:left;border-radius: 50%;" @click="selectImg(item,index)" :class="{correct:isSelected&&index===selectItem}">
+                            </div>
+                        </div>
+                        <div>
+                            <el-button style="float:left" @click="dialogShow=false">取消</el-button>
+                            <el-button type="primary" style="float:right" @click="selectQue">确定</el-button>
+                        </div>
+                    </el-tab-pane>
+                    <el-tab-pane label="上传头像" name="second">
+                        <div style="width:200px;height:200px;border:1px solid red">
+                            <img :src="iconImgurl" alt="" style="width:100%">
+                        </div>
+                        <input class="file" name="file" type="file" ref="avatarInput" accept="image/png,image/gif,image/jpeg" @change="changeImage($event)" />
+                        <button type="button" @click="edit">确认修改</button>
+                    </el-tab-pane>
+                </el-tabs>
+            </div>
+        </el-dialog>
+    </div>
+</template>
+<script>
+import { IMAGE_PATH, IMG_TYPE } from "../../utility/dict";
+import { utility, getRequestSign } from "../../utility";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+    }
+  },
+  data() {
+    return {
+      dialogShow: false,
+      Icons: [],
+      iconFile: "",
+      selectItem: 0,
+      isSelected: false,
+      iconImgurl: "",
+      activeName2: "first"
+    };
+  },
+  mounted() {
+    this.Icons = [];
+    for (let i = 1; i < 151; i++) {
+      this.Icons.push(IMAGE_PATH + i + IMG_TYPE);
+    }
+  },
+  methods: {
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    },
+    changeImage(e) {
+      var file = e.target.files[0];
+    },
+    edit() {
+      let params = new FormData();
+      this.token = localStorage.getItem("token");
+      let file = this.$refs.avatarInput.files[0];
+      params.append("file", file);
+      params.append("token", this.token);
+      params.append("ts", utility.getTs());
+      params.append("version", "1.0.0");
+      params.append("sign", getRequestSign(params));
+      console.log(params, "--------------params");
+      let config = {
+        "Content-Type": "multipart/form-data"
+      };
+      if (this.$refs.avatarInput.files.length !== 0) {
+        this.$http
+          .post("http://192.168.0.22:13001/api/changeIcon", params, config)
+          .then(
+            res => {
+              let result = res.data;
+              let data = result.data;
+              let msg = result.msg;
+              let code = result.code;
+              if (code == 200) {
+                console.log(data.icon, "----------res");
+                this.$message.success("上传成功");
+                this.iconImgurl =
+                  "http://192.168.0.22:8888/sjx/public" + data.icon;
+                localStorage.setItem("url", this.iconImgurl);
+              } else {
+                this.$message.error(msg);
+              }
+            },
+            err => {
+              this.$message.error("请求错误");
+            }
+          );
+      }
+    },
+    selectQue() {
+      this.iconImgurl = this.iconFile;
+    },
+    selectImg(val, index) {
+      this.iconFile = val;
+      this.selectItem = index;
+      if (this.selectItem === index) {
+        this.isSelected = true;
+      } else {
+        this.isSelected = false;
+      }
+    }
+  }
+};
+</script>
+

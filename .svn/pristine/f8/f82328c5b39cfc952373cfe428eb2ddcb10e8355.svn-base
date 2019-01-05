@@ -1,0 +1,932 @@
+<template>
+	<div class="learnIndex" v-loading='loadingShow'  element-loading-spinner="el-icon-loading"
+    element-loading-background="rgba(128,128,128, 0.8)"> 
+        <div class="header">
+            <nav-header>
+                <div slot="title" class="shopping-title">
+                <div class='areas'>
+                    <span class="area-item">{{title}}</span>
+                </div>
+                </div>
+            </nav-header>
+        </div>
+        <div class="learnMain">
+            <sidebar v-on:siderData="sidebarFun" :bookTitle='bookTitle' :columnNoIndex='columnNoIndexs' ref="sidebar">
+            </sidebar>
+            <el-tabs class="elTabs" v-model="trackListValue" type="card" @tab-click="clickTab">
+                <el-tab-pane
+                    key='-'
+                    value='-'
+                    label="-">
+                </el-tab-pane>
+                <el-tab-pane
+                    v-for="(item, index) in trackList"
+                    :key='index'
+                    :value='item.content1'
+                    :label="item.content1">
+                </el-tab-pane>
+            </el-tabs>
+            <el-main class="main">
+                <div class="mainDiv">
+                    <div class="wordDiv">
+                        <div class="wordLeft">
+                            <p :class="'mainWord ' + colorWord">{{learnWordInfo.content1}}</p>
+                            <p class="mainP mainSoundmark">{{learnWordInfo.content2}}</p>
+                            <p v-show='!btnData.answerShow' class="mainP mainSentence">{{learnWordInfo.content8}}</p>
+                            <p v-show='btnData.answerShow' class="mainP mainSentence" v-html="learnWordInfo.content3"></p>
+                        </div>
+                        <div class="wordRight">
+                            <img :src="imgPaths+learnWordInfo.content5" alt="">
+                        </div>
+                        <audio @ended="playEnded(siderData.selectPlayCount)" ref="audioWord" preload :src="audioPaths+learnWordInfo.content7"></audio>
+                    </div>
+                    <div class="answerBtn" v-show="playBtnShow">
+                        <el-button v-show="btnData.successaAnswerShow" type="success" @click="correct">
+                            <i class="el-icon-success"></i>
+                            正确/认识
+                        </el-button>
+                        <el-button :type="btnData.btnType" :plain="btnData.iconClass==='el-icon-back'" @click="getAnswer">
+                            <i :class="btnData.iconClass"></i>
+                            {{btnData.btnName}}
+                        </el-button>
+                    </div>
+                    <div class="answerMain" v-show='btnData.answerShow'>
+                        <div class='listenDiv'>
+                            <p class="listen" v-html="learnWordInfo.content4">
+                            </p>
+                        </div>
+                        <div class='listenDiv borderBotttom'>
+                            <p class='listen' v-html="learnWordInfo.content6">
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </el-main>
+            <div class="asideRight">
+                <div class="iconDiv">
+                    <i @click="getWordList" v-show="wordListDialogShow" class="el-icon-tickets wordList"></i>
+                    <i @click="getAudio" class="el-icon-tickets brainWave"></i>
+                </div>
+            </div>
+        </div>
+        <fonter :fonterData='siderData'></fonter>
+        <learn-dialog :show.sync='siderData.dialogShow' :promptContent='promptContents' :Dialogtitle='Dialogtitles'>
+        </learn-dialog>
+        <brainWave-dialog :show.sync='brainWaveShow'>
+        </brainWave-dialog>
+        <wordList-dialog :show.sync='wordListShow' :wordListData='wordListDatas'>
+        </wordList-dialog>
+	</div>
+</template>
+<script>
+import Base64 from "crypto-js/enc-base64";
+import Utf8 from "crypto-js/enc-utf8";
+import dataService from "@/service/index";
+import {imgPath, audioPath} from '@/service/urlConfig'
+import navHeader from "@/components/navHeader";
+import fonter from "./learnFonter";
+import sidebar from './learnSidebar'
+import wordListDialog from './wordListDialog'
+import learnDialog from './learnDialog'
+import brainWaveDialog from './brainWaveDialog'
+export default {
+  components: {
+    navHeader,
+    fonter,
+    sidebar,
+    wordListDialog,
+    learnDialog,
+    brainWaveDialog
+  },
+  data() {
+        return {
+            // 当前停止播放
+            pauseShowIndexs:false,
+            columnNoIndexs:'',
+            // 图片URL
+            imgPaths:imgPath,
+            audioPaths:audioPath,
+            // 在快速预览btn隐藏
+            playBtnShow:false,
+            loadingShow:false,
+            // 
+            columnNeedReview:"",
+            // 侧边栏数据
+            siderData:{},
+            // 单词列表
+            wordListDatas:[],
+            // 单词弹框
+            wordListShow:false,
+            // 提示内容
+            promptContents:'',
+            Dialogtitles:"",
+            // 脑波弹框
+            brainWaveShow:false,
+            // 标题
+            title:'',
+            // 
+            num:0,
+            // 轨迹数组
+            trackList:[],
+            // 轨迹规则
+            trackListPosition:[3, 6, 12, 24, 48],
+            colors:'color7',
+            colorWord:'',
+            colorArr:["#946E02","#008B2D","#0076AA","#660066","#081189","#000000",'FF0000',],
+            // 选中轨迹中的单词
+            trackListValue:'',
+            // 当前栏目的总单词列表
+            totalWordList:[
+                {
+                    bookSort:"ENGLISH_WORD",
+                    content1:"way",
+                    content2:"[weɪ]",
+                    content3:"【中】n.道路；方法；路线<br />【英】n.place for walking，travelling，etc along；path，road，street，etc",
+                    content4:"【谚】Better to ask the way than go astray.问路总比迷路好<br />【例】Can you tell me the way to the hospital?你能告诉我去医院的路吗?<br />【习】Now I'm the one who's laughing all the way to the bank.现在发财得意的是我。<br />【例】It was foolish to endanger your life in that way.用那种方式危及你的生命是愚蠢的。",
+                    content5:"/road.jpg",
+                    content6:"【同音】与 weigh、whey同音。<br />【辨析】street指一般的城市、城镇或市郊的“街道、马路”，旁边一般有建筑物；road指能行驶车辆的宽阔而平坦的“大路、公路”及乡间的“小路”；way指从某处到某处的“路程、路线”。<br />【搭配】by way of 经由；by the way 顺便",content7:"/w/way.mp3",
+                    content8:"➤Better to ask the way than go astray.",
+                    id:416776,
+                    orders:38,
+                    status:"ENABLED",
+                    wordNo:"979249475985993732"
+                }
+            ],
+            learnWordInfo:{},
+            // 当前单词的index
+            currentWordIndex:0,
+            // 按钮相关变量
+            btnData:{
+                btnName:"答案",
+                iconClass:'el-icon-question',
+                btnType:'primary',
+                answerShow:false,
+                successaAnswerShow:false,
+            },
+            leranWordStartTime:'',
+            clickCorrectTime:'',
+            clickErrTime:"",
+            clickAnswerTime:'',
+            t1:0,
+            t2:0,
+            t3:0,
+            nextTime:"",
+            wordListDialogShow:true,
+            columnArr:[],
+            columnIndex:0,
+            quickPreviewArr:[],
+            previewIndex:0,
+            reviewArr:[],
+            reviewIndex:0,
+            learnArr:[],
+            learnIndex:0,
+            columnNo:'',
+            // 学会单词
+            learnData:{
+                bookNo:"",
+                columnNo:"",
+                learnType:"DEFAULT",
+                records:[]
+            },
+            // 错误单词信息
+            worngWordData:[],
+            // 错误单词
+            wrongData:{
+                bookNo:"",
+                columnNo:"",
+                learnType:"DEFAULT",
+                records:[]
+            },
+            // 当前类型
+            currentType:'',
+            bookTitle:"",
+        };
+  },
+  watch:{
+      learnWordInfo(){
+          if(this.currentType!=='preview'){
+            this.leranWordStartTime=new Date()
+            console.log(this.leranWordStartTime,'根据单词变化更新开始时间')
+
+          }
+      },
+      columnNo(){
+            this.trackList=[]
+            if(this.currentType!=='preview'){
+                if(this.wrongData.records.length>0){
+                   this.wrongDataBase = Base64.stringify(Utf8.parse(JSON.stringify(this.wrongData)));
+                   this.addColumnWordsNotes()
+                    // this.wrongData.records=[]
+                
+                }
+                if(this.learnData.records.length>0){
+                    console.log(this.learnData)
+                    this.learnDataBase = Base64.stringify(Utf8.parse(JSON.stringify(this.learnData)));
+                    this.addColumnLearnWords()
+                    // this.learnData.records=[]
+                }
+            }
+      }
+  },
+  mounted() {
+      console.log(this.$route.params.bookInfo)
+      let bookInfo=this.$route.params.bookInfo
+    //   this.title=bookInfo.words
+      this.bookTitle = bookInfo.name
+      this.siderData.totalWord = bookInfo.words
+  },
+  computed: {
+
+  },
+  methods: {
+    //   侧边栏的数据
+    sidebarFun(data){
+        this.siderData=data
+        if(this.siderData){
+            this.columnNo=this.siderData.needLearnColumnNo
+            this.columnNoIndexs=this.columnNo
+            this.learnData.bookNo=this.siderData.bookNo
+            this.learnData.columnNo=this.columnNo
+            this.wrongData.bookNo=this.siderData.bookNo
+            this.wrongData.columnNo=this.columnNo
+            this.promptContents=this.siderData.warnDialogStatus
+            this.Dialogtitles=this.siderData.previewTitle
+            this.title=this.Dialogtitles
+            this.playBtnShow=true
+            this.columnArr=data.catalogList
+            this.columnArr.forEach((item,index) => {
+                if(this.columnNo===item.columnNo){
+                    this.columnIndex=index
+                }
+            })
+            // 判断是否有复习的单词没有的话获取学习的单词
+            if(this.siderData.columnNeedReview==='Y'){
+                this.totalWordList=this.siderData.columnReviewWords
+                this.reviewArr=this.totalWordList
+                this.learnWordInfo=this.reviewArr[this.reviewIndex]
+                this.leranWordStartTime=new Date()
+                this.wordListDialogShow=false
+            }else{
+               if(this.siderData.selectPlayCount!==''){
+                    this.siderData.columnNeedReview='preview'
+                    // this.currentType='preview'
+                    this.wordListDialogShow=false
+                    if(this.siderData.needLearnColumnNo){
+                        if(this.siderData.stopPlay||this.siderData.pause){
+                            if(this.siderData.stopPlay){
+                                this.learnWordInfo=this.learnArr[this.learnIndex]
+                            }
+                            if(this.siderData.pause){
+                                this.learnWordInfo=this.quickPreviewArr[this.previewIndex]
+                                this.playBtnShow=false
+                                this.btnData.answerShow=true
+                            }
+                        }else{
+                            this.getBookColumnLearnWords('preview')
+                            this.currentType='preview'
+                            this.preview()
+                        }
+                    }
+                }else{
+                    this.wordListDialogShow=true
+                    this.currentType='learn'
+                    if(this.siderData.needLearnColumnNo){
+                        // if(this.siderData.dialogShow!==true){
+                            this.getBookColumnLearnWords('learn')
+                        // }
+                    }
+                }
+            }
+            // 判断单词列表长度
+            if(this.totalWordList.length>0){
+                this.loadingShow=false
+            }else{
+                this.loadingShow=true
+            }
+        }
+    },
+    // 预览
+    preview(){
+        this.playBtnShow=false
+        this.btnData.answerShow=true
+        this.playAudio()
+    },
+    // 播放音频
+    playAudio(){
+        this.$nextTick(()=>{
+            let audioWords=this.$refs.audioWord
+            audioWords.play()
+        })
+    },
+    // 检测audio播放
+    playEnded(playNum){
+        if(!this.siderData.stopPlay&&!this.siderData.pause){
+            if(this.siderData.selectPlayCount){
+                if(this.num < parseFloat(playNum)){
+                    let audioWords=this.$refs.audioWord
+                    this.num++
+                    audioWords.play()
+                    this.playEnded
+                }else{
+                    this.nextWord()
+                    this.num=0            
+                }
+            }
+        }
+    },
+    // 下一个单词
+    nextWord(){
+        this.previewIndex++
+        this.siderData.learnWord=this.previewIndex
+        if(this.previewIndex===this.quickPreviewArr.length){
+            // 预览完毕提示
+            this.columnIndex++
+            console.log(this.columnIndex)
+            if(this.columnIndex>=this.columnArr.length){
+                // this.siderData.playOver=true
+                // this.pauseShowIndexs=true
+                this.$refs.sidebar.getplay()
+                this.siderData.columnNeedReview='N'
+                this.$message({
+                    showClose: true,
+                    message: '本课本已经预览完毕',
+                    type: 'warning'
+                });
+                this.quickPreviewArr=[]
+                this.previewIndex=0
+                this.columnNo=this.siderData.needLearnColumnNo
+                this.columnNoIndexs=this.columnNo
+                console.log(this.columnNoIndexs)
+                this.learnWordInfo=this.learnArr[this.learnIndex]
+            }else{
+                this.columnNo=this.columnArr[this.columnIndex].columnNo
+                this.columnNoIndexs=this.columnNo
+                console.log(this.columnNoIndexs)
+                this.siderData.name=this.columnArr[this.columnIndex].name
+                this.title=this.siderData.name
+                this.siderData.columnPlan=this.columnArr[this.columnIndex].totalWord
+                this.$refs.sidebar.getBookColumn()
+                this.getBookColumnLearnWords('preview')
+                this.previewIndex=0
+                this.preview()
+            }
+        }else{
+            this.learnWordInfo=this.quickPreviewArr[this.previewIndex]
+            this.preview()
+        }
+    },
+    //   点击脑波
+    getAudio(){
+        this.brainWaveShow=true
+    },
+    //   点击tab
+    clickTab(e){
+        console.log(this.trackList)
+        let wordIndex= parseFloat(e.index)-1
+        console.log(e,wordIndex)
+        this.btnData.answerShow=false
+        this.btnData.iconClass='el-icon-question'
+        this.btnData.successaAnswerShow=false
+        this.btnData.btnName='答案'
+        this.btnData.btnType='primary'
+        if(wordIndex===-1){
+            this.learnWordInfo=this.learnArr[this.learnIndex]
+        }else{
+           this.learnWordInfo=this.trackList[wordIndex]
+        }
+        this.colorWord=this.learnWordInfo.colors
+        let color=this.learnWordInfo.colors
+        console.log('当前颜色的',color)
+        let i=parseFloat(color.split('r')[1])
+        if(color!=='color7'){
+            i=color==='color1'?7:(i-1)
+            this.colorWord= 'color'+i
+        }
+        console.log('当前颜色减过',this.colorWord)
+    },
+    //   点击单词列表
+    getWordList(){
+        this.wordListShow=true
+    },
+    //   点击确定要进行章节测试
+    test(){
+        let examType
+        if(this.promptContents==='learnOver'){
+            examType='COLUMN_WORD_AFTER'
+        }
+        if(this.promptContents==='chapterTest'){
+            examType='COLUMN_WORD_BEFORE'
+        }
+        this.$router.push({
+            name: "wordTest",
+            params: {
+                examType:examType,
+                bookNo:this.siderData.bookNo,
+                columnNo:this.columnNo
+            }
+        });
+        this.$router.push("wordTest")
+    },  
+    // 清空学习记录
+    clearLearn(){
+    },
+    //   答对啦
+    correct(){
+        // 用户答对啦之后,切换到下一个单词
+        this.t2=new Date() - this.clickAnswerTime
+        if(this.t2>15000){
+            this.t2=15000
+        }
+        this.getBtnType()
+        let nArr=[]
+        let rightCount=0
+        if(this.learnWordInfo.colors===undefined){
+            this.colors='color7'
+            rightCount = 0
+            this.siderData.learnWord++
+        }
+        for(let i=0;i<this.trackList.length;i++){
+            let wordNo=this.learnWordInfo.wordNo
+            let trackWordNo=this.trackList[i].wordNo
+            if(wordNo===trackWordNo){
+                nArr.push(this.trackList[i].rightCount)
+            }
+        }
+        console.log(nArr)
+        if(nArr.length>0){
+            let n = nArr[0]
+            rightCount = n+1
+            if(n<5){
+                this.colors='color'+(n+2)
+                n=this.trackListPosition[n]
+                this.addObject(n,'Y',rightCount) 
+                let l = this.worngWordData.length
+                let wordTime
+                for(let i=0;i<l;i++){
+                    if( this.learnWordInfo.wordNo === this.worngWordData[i].wordNo){
+                        console.log(i)
+                        wordTime=this.worngWordData[i].time + this.t1 + this.t2
+                        this.$set(this.worngWordData[i],'time',wordTime)
+                        console.log(this.worngWordData)
+                    }
+                }
+                console.log(this.worngWordData)
+            }else{
+                let l = this.worngWordData.length
+                let wordTime
+                let learnTime=this.formatDateTime(new Date())
+                for(let i=0;i<l;i++){
+                    if( this.learnWordInfo.wordNo === this.worngWordData[i].wordNo){
+                        console.log(i)
+                        wordTime=this.worngWordData[i].time + this.t1 + this.t2
+                        let wordObject={'wordNo':this.learnWordInfo.wordNo,'learnTime':learnTime,'learnSeconds':wordTime}
+                        this.learnData.records.push(wordObject)
+                        console.log(this.worngWordData)
+                    }
+                }
+                this.siderData.learnWord++
+            }
+        }else{
+            this.addObject(0,'N',1)
+            let learnSecondsTime=this.t1+this.t2
+            let learnTime=this.formatDateTime(new Date())
+            let wordObject={'wordNo':this.learnWordInfo.wordNo,'learnTime':learnTime,'learnSeconds':learnSecondsTime}
+            
+            this.learnData.records.push(wordObject)
+            console.log(this.learnData)
+        }
+        console.log(this.learnData)
+        if(this.learnIndex===this.learnArr.length-1){
+            this.wrongDataBase = Base64.stringify(Utf8.parse(JSON.stringify(this.wrongData)));
+            this.addColumnWordsNotes()
+            // this.wrongData.records=[]
+            this.learnDataBase = Base64.stringify(Utf8.parse(JSON.stringify(this.learnData)));
+            this.addColumnLearnWords()
+            // this.learnData.records=[]
+            this.siderData.dialogShow=true
+            this.promptContents='learnOver'
+        }else{
+            this.learnIndex+=1
+            this.learnWordInfo=this.learnArr[this.learnIndex]
+            this.colorWord=this.learnWordInfo.colors
+            this.playAudio()
+        }
+       
+    },
+    // 向trackList数组添加属性和向learnArr数组添加对象
+    addObject(n,learnArr,rightCount){
+        let learnObject={}
+        for(let key in this.learnWordInfo){
+            this.$set(learnObject,key,this.learnWordInfo[key])
+        }
+        this.$set(learnObject,'colors',this.colors)
+        this.$set(learnObject,'rightCount',rightCount)
+        this.trackList.unshift(learnObject)
+        if(learnArr==='Y'){
+            this.learnArr.splice(this.learnIndex+n+1,0,learnObject)  
+        }
+    },
+    formatDateTime(time){
+        let year=time.getFullYear()
+        let month=time.getMonth() + 1 < 10 ? '0'+(time.getMonth()+1) : time.getMonth()+1
+        let date=time.getDate() < 10 ? '0'+(time.getDate()) : time.getDate()
+        let h=time.getHours() < 10 ? '0'+(time.getHours()) : time.getHours()
+        let m=time.getMinutes() <10 ? '0'+(time.getMinutes()) :time.getMinutes()
+        let s=time.getSeconds() <10 ? '0'+(time.getSeconds()) :time.getSeconds()
+        return year+month+date+h+m+s
+    },
+    // 按钮的隐藏变化
+    getBtnType(){
+        this.btnData.successaAnswerShow=false
+        this.btnData.answerShow=false
+        this.btnData.iconClass='el-icon-question'
+        this.btnData.btnName='答案'
+        this.btnData.btnType='primary'
+    },
+    //   点击答案按钮，获取答案
+    getAnswer(){
+        // console.log('获取答案')
+        if(this.btnData.btnName==='答案'){
+            this.clickErrTime=new Date()
+            this.t1=(new Date() - this.leranWordStartTime)>15000?15000:(new Date() - this.leranWordStartTime)
+            console.log(this.t1)
+            this.clickAnswerTime= new Date()
+            this.btnData.answerShow=true
+            this.btnData.successaAnswerShow=true
+            this.btnData.iconClass='el-icon-error'
+            this.btnData.btnName='错误/不认识'
+            this.btnData.btnType='danger'
+        }else if(this.btnData.btnName==='错误/不认识'){
+            this.btnData.successaAnswerShow=false
+            this.btnData.answerShow=true
+            this.btnData.iconClass='el-icon-back'
+            this.btnData.btnName='下一个'
+            this.btnData.btnType='danger'
+            // 不认识的单词计时
+            this.t2=(new Date() - this.clickAnswerTime)>15000?15000:(new Date() - this.clickAnswerTime)
+            if(this.learnWordInfo.colors===undefined){
+                this.colors='color1'
+            }else{
+                this.colors=this.learnWordInfo.colors
+            }
+            this.playAudio()
+        }else{
+            // 点击下一个
+            this.t3=(new Date() -this.clickErrTime)>15000?15000:(new Date() -this.clickErrTime)
+            let wrongArr=this.wrongData.records
+            console.log(wrongArr)
+            let wordNo=this.learnWordInfo.wordNo
+            let j=0
+            let totalTime = this.t1+this.t2+this.t3
+            let timeIndex
+            console.log(totalTime)
+            if(wrongArr.length===0){
+                let wordObject={'wordNo':wordNo,reviewNum:0}
+                this.wrongData.records.push(wordObject)
+                this.worngWordData.push({'wordNo':wordNo,'time':totalTime})
+                this.siderData.newWord++
+                this.siderData.sumNewword++
+            }else{
+                for(let i= wrongArr.length-1;i>=0;i--){
+                    console.log(wordNo)
+                    console.log(wrongArr[i].wordNo)
+                    if(wordNo===wrongArr[i].wordNo){
+                       j++
+                       timeIndex=i
+                    }
+                }
+                if(j===0){
+                    let wordObject={'wordNo':wordNo,reviewNum:0}
+                    this.wrongData.records.push(wordObject)
+                    this.worngWordData.push({'wordNo':wordNo,'time':totalTime})
+                    this.siderData.newWord++
+                    this.siderData.sumNewword++
+                }
+                if(j===1){
+                    let wrongTime=this.worngWordData[timeIndex].time+totalTime
+                    this.$set(this.worngWordData[timeIndex],'time',wrongTime)
+                }
+                console.log(j)
+                debugger;
+                console.log(this.worngWordData)
+            }
+            this.getBtnType()
+            this.addObject(1,'Y',0)
+            this.learnIndex++ 
+            this.learnWordInfo=this.learnArr[this.learnIndex]
+            this.colorWord=this.learnWordInfo.colors
+            this.playAudio()
+        }
+    },
+    //本栏目需要学习的单词 
+    getBookColumnLearnWords(learnType){
+      dataService.getBookColumnLearnWords(0, 20, 'DEFAULT', this.columnNo).then(res => {
+        let result = res.data;
+        let code = result.code;
+        let data = result.data;
+        let msg = result.msg;
+        this.loadingShow=false
+        if (code == 200) {
+            this.totalWordList = data
+            this.wordListDatas = data
+            console.log(learnType)
+            if(learnType==='preview'){
+                this.quickPreviewArr=this.totalWordList
+                this.learnWordInfo=this.quickPreviewArr[this.previewIndex]
+            }else if(learnType==='learn'){
+                this.learnArr=this.totalWordList
+                this.learnWordInfo=this.learnArr[this.learnIndex]
+            }else{
+                this.reviewArr=this.totalWordList
+                this.learnWordInfo=this.reviewArr[this.reviewIndex]
+            }
+            this.playAudio()
+        }else{
+            
+        }
+      },err=>{
+
+      });
+    },
+    // 新增栏目学会的单词
+    addColumnLearnWords(){
+        dataService.addColumnLearnWords(this.learnDataBase).then(res => {
+            console.log(res)
+            let result = res.data;
+            let code = result.code;
+            let data = result.data;
+            let msg = result.msg;
+            if (code == 200) {
+                this.learnData.records=[]
+            }else{
+                
+            }
+        },err=>{
+
+        })
+    },
+    // 新增栏目错误的单词
+    addColumnWordsNotes(){
+        dataService.addColumnWordsNotes(this.wrongDataBase).then(res => {
+            console.log(res)
+            let result = res.data;
+            let code = result.code;
+            let data = result.data;
+            let msg = result.msg;
+            if (code == 200) {
+                this.wrongData.records=[]
+            }else{
+                
+            }
+        },err=>{
+
+        })
+    },
+    getBookColumn(){
+        dataService.getBookColumn(20, 'DEFAULT', this.bookNo).then(res=>{
+            console.log(res)
+            let result = res.data
+            let code = result.code 
+            let data = result.data
+            let msg = result.msg
+            if(code == 200){
+                this.asideData.needLearnColumnNo=data.needLearnColumnNo
+                this.catalogList=data.columns
+                this.selection=data.needLearnColumnNo
+                this.$emit('siderData', this.asideData);
+            }else{
+
+            }
+        })
+    },
+  }
+};
+</script>
+<style lang="scss">
+.learnIndex{
+     background-color: #EFEFF4;
+     height:100%;
+     .el-loading-spinner{
+         .el-icon-loading{
+             font-size: 80px;
+             font-weight: bold;
+             color:#fff;
+         }
+     }
+     .el-dialog {
+        margin-top:37vh  !important;
+        min-width: 500px;
+        border-radius:10px;
+        .el-dialog__header{
+            border-top-left-radius:8px;
+            border-top-right-radius:8px;
+            background-color:#56BDFF;
+            .el-dialog__title{
+                color:#fff;
+                font-size:20px;
+            }
+        }
+        .el-dialog__body{
+            text-align:center;
+        }
+        .el-dialog__footer{
+            .el-button{
+                padding:10px 50px;
+                border:none;
+                border-radius:8px;
+                box-shadow: 0px 2px 5px #BABABA;
+                -moz-box-shadow:  0px 2px 5px #BABABA;
+            }
+            .el-button--primary{
+                background-color:#56BDFF;
+            }
+            .el-button--default{
+                background-color:#F4F4F4;
+            }
+        }
+     }
+    .learnMain{
+        position: absolute;
+        height:100%;
+        width:100%;
+        top:0px;
+        color: #7D8287;
+        background-color: #E5E5E5;
+        .asideRight{
+            position: absolute;
+            height:100%;
+            top:0px;
+            right:0px;
+            width:80px;
+            text-align: center;
+            .iconDiv{
+                padding-top: 160px;
+                i{
+                    display: block;
+                    font-size: 50px;
+                    width:100%;
+                    background-color: #F4F4F4;
+                    height:150px;
+                    line-height: 150px;
+                }
+                .brainWave{
+                    margin-top: 20px;
+                }
+            }
+        }
+        .elTabs{
+            background-color: #868686;
+            position: absolute;
+            padding: 69px 0px 40px 0px;
+            width:100%;
+            height:0px;
+            overflow-y: hidden;
+             .elTabs::-webkit-scrollbar{
+                width:0px;
+            }
+            .elTabs::-webkit-scrollbar-thumb{
+                background-color:#c2c2c2;
+            }
+            .el-tabs__header{
+                padding-left: 250px;
+                margin:0px;
+                margin-top:13px;
+                border-bottom: 0;
+                .el-tabs__nav{
+                    border:none;
+                    .el-tabs__item{
+                        color: #fff;
+                        height:30px;
+                        line-height: 30px;
+                        border-left:none;
+                        border-radius: 5px 5px 0px 0px;
+                    }
+                    .is-active{
+                        background-color: #fff;
+                        color:#57BDFF;
+                    }
+                }
+            }
+        }
+        .main{
+            width:100%;
+            height:100%;
+            position: absolute;
+            overflow: hidden;
+            top:0px;
+            left:0px;
+            padding: 130px 100px 30px 270px;
+            .mainDiv::-webkit-scrollbar{
+                width:0px;
+            }
+            .mainDiv::-webkit-scrollbar-thumb{
+                background-color:#c2c2c2;
+            }
+            .mainDiv{
+                width:100%;
+                overflow-y: auto;
+                height: 100%;
+                .wordDiv{
+                   background-color: #fff;
+                   border-radius: 25px;
+                   padding: 10px 20px;
+                   height:200px;
+                   position:relative;
+                   margin-bottom: 13px;
+                   .wordLeft{
+                       display: inline-block;
+                       width:70%;
+                       height:100%;
+                       .mainWord{
+                           font-size: 50px;
+                           color:#FF0000;
+                           font-weight: normal;
+                       }
+                       .color1{
+                           color:#946E02;
+                       }
+                        .color2{
+                           color:#008B2D;
+                       }
+                       .color3{
+                           color: #0076AA;
+                       }
+                        .color4{
+                           color:#660066;
+                       }
+                        .color5{
+                           color:#081189;
+                       }
+                        .color6{
+                           color:#000000;
+                       }
+                        .color7{
+                           color:#FF0000;
+                       }
+
+                       .mainP{
+                           line-height: 30px;
+                           color:#868686;
+                           font-size: 16px;
+                           font-weight: normal;
+                       }
+                   }
+                   .wordRight{
+                        display: inline-block;
+                        width:200px;
+                        height:100%;
+                        position:absolute;
+                        top:20px;
+                        right:0px;
+                        img{
+                            vertical-align:middle;
+                            width:180px;
+                            height:180px;
+                            border-radius: 20px;
+                        }
+                   }
+                }
+                .answerBtn{
+                    width:100%;
+                    position: relative;
+                    height: 60px;
+                    text-align: right;
+                    .el-button{
+                        padding: 10px 30px;
+                        font-size: 24px;
+                        border-radius: 12px;
+                        .el-icon-back{
+                            transform: rotate(180deg);
+                            font-weight: bold;
+                        }
+                    }
+                    .el-button--success{
+                        background-color: #0EE573;
+                        border-color: #0EE573;
+                    }
+                    .el-button--success:focus, .el-button--success:hover{
+                        background-color: #0EE573;
+                        border-color: #0EE573;
+                    }
+                }
+                .answerMain{
+                    background-color: #fff;
+                    border-radius: 25px;
+                    padding: 20px 20px;
+                    color:#7D7D7D;
+                    font-size:16px;
+                    .listenDiv{
+                        border-bottom:1px solid #D3D3D3;
+                        .listen{
+                            line-height:35px;
+                        }
+                    }
+                    .borderBotttom{
+                        border-bottom:none;
+                    }
+                }
+            }
+        }
+    }
+}
+</style>

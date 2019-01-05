@@ -1,0 +1,149 @@
+<template>
+  <div class="unKnowWord clear">
+    <div class="header">
+      <nav-header :showBack='false'>
+        <div slot="title" class="shopping-title">
+          <div class='areas'>
+            <span class="area-item">生词本</span>
+          </div>
+        </div>
+      </nav-header>
+    </div>
+    <div class="book-container">
+      <ul class="book-list" v-loading="newwordLoading" element-loading-text="拼命加载中">
+        <li class="list-item" @click="goDetail(index,item)"  v-for="(item,index) in dataList" :key='index'>
+          <img class="book-img" :src='url+item.coverImgUrl'>
+          <div class="book-intro">
+            <p>{{item.name}}</p>
+            <p>共有
+              <span style="color:red">{{item.totalWordNotes}}</span>个生词</p>
+          </div>
+          <div class="arrow"></div>
+        </li>
+      </ul>
+      <div style="text-align:center" v-if="listShow">暂无生词，请赶紧去学习吧</div>
+    </div>
+    <wordNoteDetail-dialog :show.sync="wordDialogShow" :newWord="unKnowWord">
+
+    </wordNoteDetail-dialog>
+  </div>
+</template>
+<script>
+import { ResourcePath } from "../../service/urlConfig";
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+import wordNoteDetailDialog from "./children/wordNoteDetailDialog";
+export default {
+  data() {
+    return {
+      loading: false,
+      dataList: [],
+      listShow: true,
+      url: ResourcePath,
+      wordDialogShow: false,
+      unKnowWord: {},
+      newwordLoading: false
+    };
+  },
+  mounted() {
+    this.getDownBooklist();
+  },
+  methods: {
+    goDetail(index, item) {
+      this.wordDialogShow = true;
+      this.unKnowWord = item;
+    },
+    getDownBooklist() {
+      this.dataList = [];
+      this.newwordLoading = true;
+      this.loading = true;
+      dataService.getDownBookList(0, 200).then(
+        res => {
+          let result = res.data;
+          let code = result.code;
+          let data = result.data;
+          let msg = result.msg;
+          if (code === 200) {
+            console.log(data);
+
+            this.dataList = data.content;
+            if (Array.isArray(data.content) && data.content.length === 0) {
+              this.listShow = true;
+            } else {
+              this.listShow = false;
+            }
+            this.newwordLoading = false;
+          } else {
+            this.$message.error(msg);
+            this.newwordLoading = false;
+          }
+        },
+        () => {
+          this.$message.error("请求错误");
+          this.newwordLoading = false;
+        }
+      );
+    }
+  },
+  components: {
+    navHeader,
+    wordNoteDetailDialog
+  }
+};
+</script>
+<style lang="scss">
+.unKnowWord {
+  width: 100%;
+  height: 100%;
+  .book-container {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    padding: 10px;
+    // background: #f7f7f7;
+    overflow: auto;
+    .book-list {
+      width: 100%;
+      height: 100%;
+      list-style: none;
+      // padding: 0 30px;
+      display: flex;
+      -ms-flex-wrap: wrap;
+      flex-wrap: wrap;
+      .list-item {
+        cursor: pointer;
+        min-width: 400px;
+        height: 120px;
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 5px;
+        border-radius: 5px;
+        background: #ffffff;
+        box-shadow: #c2c1c6 2px 1px 7px 0px;
+        position: relative; //配合箭头做绝对定位
+        .book-img {
+          width: 100px;
+          float: left;
+        }
+        .book-intro {
+          float: left;
+          width: 200px;
+          margin-top: 40px;
+          margin-left: 10px;
+        }
+        .arrow {
+          float: right;
+          width: 15px;
+          height: 15px;
+          border: 3px solid #66c3ff;
+          border-width: 0 2px 2px 0;
+          transform: rotate(315deg);
+          margin: 50px 20px 0 0;
+        }
+      }
+    }
+  }
+}
+</style>

@@ -1,0 +1,41 @@
+<template>
+    <div class="course-center cnfont">
+
+        <nav-header  :showBack="false">
+            <span slot="title">学习中心</span>
+        </nav-header>
+    </div>
+</template>
+
+<script>
+import navHeader from "@/components/navHeader";
+import dataService from "@/service/index";
+
+export default {
+  components: {
+    navHeader
+  },
+  data() {
+    return {
+      mobile: "15333736705",
+      number: "10",
+      srcPath: "static/images/79.jpg",
+    };
+  },
+  mounted() {
+   
+  },
+  methods: {}
+};
+</script>
+
+<style lang="scss" >
+.course-center {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+</style>
+
+

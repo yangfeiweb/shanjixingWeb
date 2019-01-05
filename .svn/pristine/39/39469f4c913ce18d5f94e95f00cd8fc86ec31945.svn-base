@@ -1,0 +1,242 @@
+<template>
+    <div class='learnSidebar'>
+        <div class="titleDiv">
+            <p class="asideP">{{catalogTitle}}</p>
+        </div> 
+        <el-aside width="250px" class="aside">
+            <ul>
+                <li v-for="(item,index) in catalogList" :key="index" :class="{'asideLi':isLi , 'liBg': selection===(item.columnNo)}" @click="selectLearn(item)">
+                    <!-- <i :data-i='index' v-show="selection===index" class="el-icon-caret-right iconCaretRight"></i> -->
+                    <p>{{index+1}}.{{item.name}}</p>
+                    <p>
+                        条目 {{item.totalWord}} - 已学 : 
+                        <i class="correct">{{item.totalLearn}}</i> 
+                        | 错误 : <b class="mistake">{{item.totalWordNote}}</b></p>
+                    <!-- <i :data-i='index' v-show="item.haveToLearn>0" class="el-icon-check iconCheck"></i> -->
+                </li> 
+            </ul>
+        </el-aside>
+        <div class="autoPlay">
+            <el-tooltip class="item" effect="dark" placement="top" :visible-arrow='false'>
+                <div slot="content">
+                    <ul>
+                        <li @click="getPlayCount" class="tipLi" v-for="(item,index) in tipContent" :key='index' :data-i='index'>
+                            {{item}}
+                        </li>
+                    </ul>
+                </div>
+                <el-button  type="info" icon="el-icon-caret-right">自动播放</el-button>
+            </el-tooltip>
+        </div>
+    </div>
+</template>
+<script>
+import dataService from "@/service/index"
+export default {
+    props: {
+        colcumn: {
+            type: Boolean,
+            default: true
+        }
+    },
+    components: {
+    },
+    data(){
+        return{
+            catalogTitle:"人教版小学英语单词体验版",
+            catalogList:[],
+            selection:0,
+            isLi:true,
+            // 是否复习
+            needReview:'',
+            // 本栏目需要学习的栏目编号
+            needLearnColumnNo:'',
+            bookNo:'973445860394377217',
+            tipContent:['重复1次','重复2次','重复3次','重复4次','重复5次'],
+            // 底部进度数据
+            learnPlan:{
+                currentPlan:'20',
+                haveLearned:"1",
+                newWord:"7",
+                sumPlan:'41',
+                sumNewword:'10'
+            },
+            selectPlayCount:"",
+            warnDialogStatus:"",
+        }
+    },
+    methods:{
+        //   点击侧边栏的切换
+        selectLearn(row){
+            console.log(row)
+            this.selection = row.columnNo
+            if(this.needReview==='Y'){
+                // 提示请复习完毕
+                this.warnDialogStatus='reviewWarn'
+            }else{
+                if(row.totalWord===row.totalLearn){
+                    // 相等的话提示是否是清空学习记录
+                    this.warnDialogStatus='clearLearn'
+                }else{
+                    // 提示是否进行章节测试
+                    this.warnDialogStatus='chapterTest'
+                }
+            }
+            this.colcumn=true
+        },
+        // 播放次数
+        getPlayCount(e){
+            console.log(e.target.getAttribute('data-i'))
+            // 选择的播放次数
+            this.selectPlayCount=e.target.getAttribute('data-i')
+        },
+        // 获取侧边栏的列表
+        getBookColumn(){
+            dataService.getBookColumn(20, 'DEFAULT', this.bookNo).then(res=>{
+               let result = res.data
+               let code = result.code 
+               let data = result.data
+               let msg = result.msg
+               if(code == 200){
+                   this.catalogList=data.columns
+                //    如果needReview为y需要复习
+                   this.needReview=data.needReview
+                //    需要学习栏目编号
+                   this.needLearnColumnNo=data.needLearnColumnNo
+                //    进度数据
+                   this.selection=this.needLearnColumnNo
+                   console.log(this.selection)
+                   this.learnPlan.sumPlan=data.bookTotalLearn
+                   this.learnPlan.sumNewword=data.bookTotalWordNote
+                   console.log(data)
+               }else{
+
+               }
+            })
+        }
+    },
+    mounted(){
+        this.getBookColumn()
+    },
+    watch:{
+
+    },
+    computed: {
+
+    },
+};
+</script>
+
+<style lang="scss">
+.learnSidebar{
+    color:#fff;
+    background-color: #5A5555;
+    .titleDiv{
+        width:234px;
+        background-color: #5A5555;
+        position: absolute;
+        top: 70px;
+        left: 0px;
+        z-index: 20;
+        height: 60px;
+        line-height: 60px;
+        padding: 0  8px;
+        .asideP{
+            height: 60px;
+            line-height: 60px;
+            text-align: center;
+        }
+    }
+    .aside::-webkit-scrollbar{
+        width:0px;
+    }
+    .aside::-webkit-scrollbar-thumb{
+        background-color:#c2c2c2;
+    }
+    .aside{
+        position: absolute;
+        top:0px;
+        padding: 0 10px;
+        padding-top: 135px;
+        padding-bottom: 90px;
+        height:100%;
+        background-color: #5A5555;
+        text-align: center;
+        z-index: 19;
+        ul{
+            margin-bottom: 10px;
+            .asideLi{
+                height:70px;
+                position: relative;
+                p{
+                    height:35px;
+                    line-height: 35px;
+                    .mistake{
+                        color: #FD8081;
+                    }
+                    .correct{
+                        color: #62C1FE;
+                        font-style: normal;
+                    }
+                }
+                .iconCheck{
+                    position: absolute;
+                    top:15px;
+                    right: 5px;
+                    color: #57BDFF;
+                    font-size: 25px;
+                }
+                .iconCaretRight{
+                    position: absolute;
+                    top:15px;
+                    left:5px;
+                    color: #57BDFF;
+                    font-size: 30px;
+                }
+            }
+            .asideLi:hover,.liBg{
+                background-color: #3E74A0;
+            }
+        }
+    }
+    .autoPlay{
+        width: 250px;
+        position: absolute;
+        bottom: 40px;
+        left: 0px;
+        z-index: 30;
+        background: #797979;
+        text-align: center;
+        height:50px;
+        line-height:50px;
+        .el-button{
+            padding:8px 20px;
+        }
+    }
+}
+.el-tooltip__popper{
+    padding:0px;
+    background-color: #fff;
+    text-align:center;
+    ul{ 
+        list-style:none;
+        .tipLi{
+            height:30px;
+            line-height: 30px;
+            border-bottom: 1px solid #C1C1C1;
+            width:100px;
+            padding:5px 10px;
+            text-align:center;
+            background:#fff;
+            color:#303133;
+            font-size:14px;
+        }
+        .tipLi:hover{
+            background-color: #C1C1C1;
+        }
+    }
+}
+.popper__arrow{
+    display:none;
+}
+</style>

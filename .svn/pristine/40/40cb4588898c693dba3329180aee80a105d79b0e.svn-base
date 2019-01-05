@@ -1,0 +1,76 @@
+<template>
+  <div class="dialog-box">
+    <el-dialog width="30%" :visible.sync="dialogShow" @close="dialogHide" center title="新课标小学英语单词速记">
+      <div style="width:80%;height:300px;">
+        <div style="float:left" class="book-left">
+          <img :src= url+book.coverImgUrl alt="" srcset="">
+        </div>
+        <div style="float:right">
+         <p  style="float:right">{{book.info}}</p>
+          <!-- <p>1.天天不过并予公告雇一个户户呼呼我好好咕咕咕</p>
+          <p>1.天天不过并予公告雇一个户户呼呼我好好咕咕咕</p>
+          <p>1.天天不过并予公告雇一个户户呼呼我好好咕咕咕</p>
+          <p>1.天天不过并予公告雇一个户户呼呼我好好咕咕咕</p>
+          <p>1.天天不过并予公告雇一个户户呼呼我好好咕咕咕</p> -->
+          <el-button type="primary" style="margin-top:130px">开始学习</el-button>
+        </div>
+
+      </div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import { ResourcePath } from "../../service/urlConfig";
+export default {
+  props: {
+    show: {
+      type: Boolean,
+      default: false
+    },
+    bookInfo: {
+      type: Object
+    }
+  },
+  watch: {
+    show: function(val) {
+      this.dialogShow = val;
+      console.log(val);
+    },
+    bookInfo: function(val) {
+      this.book = val;
+      console.log("this.book", this.book);
+    }
+  },
+  data() {
+    return {
+      dialogShow: false,
+      book: {},
+       url: ResourcePath,
+    };
+  },
+  methods: {
+    dialogHide: function() {
+      this.$emit("update:show", false);
+    }
+  }
+};
+</script>
+<style lang="scss" >
+.dialog-box {
+  width: 100%;
+  height: 100%;
+  .el-dialog__header {
+    background: #66b1ff;
+    color: #fff !important;
+  }
+  .book-left{
+    width: 200px;
+    height: 200px;
+    img{
+      width:100%;
+    }
+  }
+}
+</style>
+
+

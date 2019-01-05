@@ -1,0 +1,6 @@
+export default function(apiRoot) {
+    return {
+        GETSTATISTICSWORDS: apiRoot + '/statistics/studentLearnWords',
+        GETSTATISTICSWRONGWORDS: apiRoot = "/statistics/studentWrongWords"
+    }
+}

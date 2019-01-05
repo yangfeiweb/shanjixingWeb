@@ -1,0 +1,30 @@
+//年级
+export const GRADLE = [
+    { value: "L_ONE", label: "小学一年级" },
+    { value: "L_TWO", label: "小学二年级" },
+    { value: "L_THREE", label: "小学三年级" },
+    { value: "L_FOUR", label: "小学四年级" },
+    { value: "L_FIVE", label: "小学五年级" },
+    { value: "L_SIX", label: "小学六年级" },
+    { value: "M_ONE", label: "初一" },
+    { value: "M_TWO", label: "初二" },
+    { value: "M_THREE", label: "初三" },
+    { value: "H_ONE", label: "高一" },
+    { value: "H_TWO", label: "高二" },
+    { value: "H_THREE", label: "高三" },
+    { value: "C_ONE", label: "大一" },
+    { value: "C_TWO", label: "大二" },
+    { value: "C_THREE", label: "大三" },
+    { value: "C_FOUR", label: "大四" }
+];
+
+export const BOOK_CATEGORY = {
+    FREE: "免费",
+    BABY: "幼儿",
+    PRIMARY: "小学",
+    MIDDLE: "初中",
+    HIGH: "高中",
+    COLLEGE: "大学",
+    GO_ABROAD: "出国",
+    COMMON: "通用"
+};

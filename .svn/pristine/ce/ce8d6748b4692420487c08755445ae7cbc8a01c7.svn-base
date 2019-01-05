@@ -1,0 +1,86 @@
+import VueResource from "vue-resource";
+import Vue from "vue";
+import router from "@/router/index";
+import utility from "./utility";
+import MD5 from "md5";
+import { Message } from "element-ui";
+Vue.use(VueResource);
+export default function(url = "", params = {}, type = "GET") {
+  let result = setRequest(url, params, type);
+  result.then(
+    res => {
+      let resultData = res.data;
+      let code = resultData.code;
+      if (code === 401) {
+        localStorage.removeItem("studentNo");
+        Message({
+          message: "登陆已过期，请重新登录！",
+          type: "warning"
+        });
+        router.push({ name: "login" });
+      } else if (code === 402) {
+        localStorage.removeItem("studentNo");
+        Message({
+          message: "账号在其他地方登陆，请重新登陆！",
+          type: "warning"
+        });
+        router.push({ name: "login" });
+      } else if (code === 403) {
+        localStorage.removeItem("studentNo");
+        Message({
+          message: "登陆已过期，请重新登录！",
+          type: "warning"
+        });
+        router.push({ name: "login" });
+      }
+    },
+    err => {
+      console.log("-----err", err);
+    }
+  );
+  return result;
+}
+
+function setRequest(url, params = {}, type) {
+  let token = localStorage.getItem("token");
+  if (token) {
+    params["token"] = token;
+  }
+  params["version"] = "1.0.0";
+  let formData = new FormData();
+  for (let key in params) {
+    formData.append(key, params[key]);
+  }
+  params["ts"] = utility.getTs();
+  let sign = getRequestSign(params);
+  params["sign"] = sign;
+  let result;
+  if (type.toUpperCase() === "GET") {
+    result = Vue.http.get(url, { params: params, timeout: 60000 });
+  } else if (type.toUpperCase() === "POST") {
+    result = Vue.http.post(url, params, {
+      emulateJSON: true,
+      timeout: 60000
+    });
+  }
+  return result;
+}
+
+export function getRequestSign(params) {
+  if (!params) {
+    params = {};
+  }
+  let paramArr = [];
+  for (let key in params) {
+    let val = params[key];
+    if (val !== undefined && val !== null && val !== "") {
+      paramArr.push(`${key}=${val}`);
+    }
+  }
+  paramArr.sort();
+
+  let key = "03c408b46416692e961e8e6accc23d26";
+
+  let paramStr = paramArr.join("&") + `&key=${key}`;
+  return MD5(paramStr).toString();
+}

@@ -1,0 +1,113 @@
+<template>
+	<div class="wordTotal"> 
+        <div class="header">
+            <nav-header>
+                <div slot="title" class="shopping-title">
+                <div class='areas'>
+                    <span class="area-item">{{title}}</span>
+                </div>
+                </div>
+            </nav-header>
+        </div>
+        <div class="wordMain">
+            <li class="wordMainLi" v-for="(item,index) in wordList" :key='index'>
+                <div class="wordMainDiv">
+                    <p class="englishP">
+                        <i class="englishI">单词 : </i>
+                        <b class="englishB">{{item.word}}</b>
+                    </p>
+                    <p class="semantic">音标 : {{item.soundmark}}</p>
+                    <p class="semantic">词义 : {{item.semantic}}</p>
+                </div>
+            </li>
+        </div>
+	</div>
+</template>
+<script>
+import navHeader from "@/components/navHeader";
+export default {
+  data() {
+        return {
+            title:'人教版(一单元)  单词列表',
+            wordList:[
+                {id:'1',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'2',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'3',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'4',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'5',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'6',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'2',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'3',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'4',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'5',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'6',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'2',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'3',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'4',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'5',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'6',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+                {id:'2',word:'apple',soundmark:'[æpl]',chinese:"苹果 ; 苹果树",semantic:'n苹果；家伙；(Apple)人名；(英)阿普尔；'},
+
+            ]
+        };
+  },
+  mounted() {
+
+  },
+  computed: {
+
+  },
+  methods: {
+
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.wordTotal{
+    .wordMain{
+        width:100%;
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        padding-bottom: 50px;
+        background-color: #EFEFF4;
+        .wordMainLi{
+            list-style: none;
+            width:50%;
+            height:200px;
+            line-height: 35px;
+            margin-top: 50px;
+            .wordMainDiv{
+                height:100%;
+                border:1px solid #E1E1E1;
+                text-align: left;   
+                margin: 0 5%;
+                padding: 10px;
+                border-radius: 5px;
+                background-color: #fff;
+                p{
+                    font-weight: bold;
+                    color: #777777;
+                }
+                .englishP{
+                    margin-right: 15px;
+                    .englishI{
+                        font-style: normal;
+                    }
+                    .englishB{
+                        color: #15C6FF;
+                        font-size: 30px;
+                    }
+                }
+                .chineseP{
+                    color: #9D9D9D;
+                }
+            }
+        }
+    }
+}
+</style>

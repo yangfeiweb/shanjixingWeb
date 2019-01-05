@@ -1,0 +1,39 @@
+<template>
+	<div class="wordTest clear">
+
+	</div>
+</template>
+<script>
+
+import navHeader from "@/components/navHeader";
+
+export default {
+  mounted() {
+
+  },
+  computed: {},
+  data() {
+    return {
+
+    };
+  },
+
+  methods: {
+
+  },
+  components: {
+    navHeader
+  }
+};
+</script>
+<style lang="scss">
+.wordTest {
+  width: 100%;
+  height: 100%;
+  .clear {
+    content: "";
+    display: block;
+    clear: both;
+  }
+}
+</style>
